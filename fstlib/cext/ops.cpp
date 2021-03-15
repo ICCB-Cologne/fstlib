@@ -3,15 +3,12 @@
 /* BEGIN: Cython Metadata
 {
     "distutils": {
-        "depends": [
-            "fstlib/cext/cops.h"
-        ],
+        "depends": [],
         "extra_compile_args": [
             "-std=c++17"
         ],
         "include_dirs": [
-            "./fstlib/cext",
-            "fstlib/cext"
+            "fstlib/fstlib/cext"
         ],
         "language": "c++",
         "libraries": [
@@ -22,7 +19,7 @@
         ],
         "name": "fstlib.cext.ops",
         "sources": [
-            "fstlib/cext/ops.pyx"
+            "fstlib/fstlib/cext/ops.pyx"
         ]
     },
     "module_name": "fstlib.cext.ops"
@@ -888,9 +885,9 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "fstlib/cext/ops.pyx",
+  "fstlib/fstlib/cext/ops.pyx",
   "stringsource",
-  "fstlib/cext/pywrapfst.pxd",
+  "fstlib/fstlib/cext/pywrapfst.pxd",
 };
 
 /*--- Type declarations ---*/
@@ -2477,11 +2474,11 @@ static const char __pyx_k_This_works[] = "This works";
 static const char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static const char __pyx_k_fstlib_cext_ops[] = "fstlib.cext.ops";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
-static const char __pyx_k_fstlib_cext_ops_pyx[] = "fstlib/cext/ops.pyx";
+static const char __pyx_k_fstlib_fstlib_cext_ops_pyx[] = "fstlib/fstlib/cext/ops.pyx";
 static PyObject *__pyx_kp_u_This_works;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_fstlib_cext_ops;
-static PyObject *__pyx_kp_s_fstlib_cext_ops_pyx;
+static PyObject *__pyx_kp_s_fstlib_fstlib_cext_ops_pyx;
 static PyObject *__pyx_n_s_ifst1;
 static PyObject *__pyx_n_s_ifst2;
 static PyObject *__pyx_n_s_import;
@@ -3704,7 +3701,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_u_This_works, __pyx_k_This_works, sizeof(__pyx_k_This_works), 0, 1, 0, 0},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_fstlib_cext_ops, __pyx_k_fstlib_cext_ops, sizeof(__pyx_k_fstlib_cext_ops), 0, 0, 1, 1},
-  {&__pyx_kp_s_fstlib_cext_ops_pyx, __pyx_k_fstlib_cext_ops_pyx, sizeof(__pyx_k_fstlib_cext_ops_pyx), 0, 0, 1, 0},
+  {&__pyx_kp_s_fstlib_fstlib_cext_ops_pyx, __pyx_k_fstlib_fstlib_cext_ops_pyx, sizeof(__pyx_k_fstlib_fstlib_cext_ops_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_ifst1, __pyx_k_ifst1, sizeof(__pyx_k_ifst1), 0, 0, 1, 1},
   {&__pyx_n_s_ifst2, __pyx_k_ifst2, sizeof(__pyx_k_ifst2), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
@@ -3748,7 +3745,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *     print('This works')
  * 
  */
-  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(0, 0, 0, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_ops_pyx, __pyx_n_s_runme, 17, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_codeobj__2 = (PyObject*)__Pyx_PyCode_New(0, 0, 0, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_ops_pyx, __pyx_n_s_runme, 17, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__2)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;

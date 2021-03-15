@@ -8,7 +8,7 @@
             "-std=c++17"
         ],
         "include_dirs": [
-            "fstlib/cext"
+            "fstlib/fstlib/cext"
         ],
         "language": "c++",
         "libraries": [
@@ -19,7 +19,7 @@
         ],
         "name": "fstlib.cext.pywrapfst",
         "sources": [
-            "fstlib/cext/pywrapfst.pyx"
+            "fstlib/fstlib/cext/pywrapfst.pyx"
         ]
     },
     "module_name": "fstlib.cext.pywrapfst"
@@ -905,7 +905,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "fstlib/cext/pywrapfst.pyx",
+  "fstlib/fstlib/cext/pywrapfst.pyx",
   "stringsource",
 };
 
@@ -3497,7 +3497,6 @@ static const char __pyx_k_MutableArcIterator___iter[] = "_MutableArcIterator.__i
 static const char __pyx_k_MutableFstSymbolTableView[] = "_MutableFstSymbolTableView";
 static const char __pyx_k_SymbolTableIterator_at_0x[] = "<_SymbolTableIterator at 0x";
 static const char __pyx_k_const_Fst_SymbolTableView[] = "<const Fst SymbolTableView ";
-static const char __pyx_k_fstlib_cext_pywrapfst_pyx[] = "fstlib/cext/pywrapfst.pyx";
 static const char __pyx_k_Unknown_replace_label_type[] = "Unknown replace label type: ";
 static const char __pyx_k_EncodeMapperSymbolTableView[] = "_EncodeMapperSymbolTableView";
 static const char __pyx_k_Unknown_compose_filter_type[] = "Unknown compose filter type: ";
@@ -3523,6 +3522,7 @@ static const char __pyx_k_Incompatible_or_invalid_arc_type[] = "Incompatible or 
 static const char __pyx_k_Incompatible_or_invalid_weight_t[] = "Incompatible or invalid weight type";
 static const char __pyx_k_Python_interface_to_the_FST_scri[] = "Python interface to the FST scripting API.\n\nOperations which construct new FSTs are implemented as traditional functions, as\nare two-argument boolean functions like `equal` and `equivalent`. Destructive\noperations---those that mutate an FST, in place---are instance methods, as is\n`write`. Operator overloading is not used. The following example, based on\nMohri et al. 2002, shows the construction of an ASR system given a pronunciation\nlexicon L, grammar G, a transducer from context-dependent phones to\ncontext-independent phones C, and an HMM set H:\n\n  L = fst.Fst.read(\"L.fst\")\n  G = fst.Fst.read(\"G.fst\")\n  C = fst.Fst.read(\"C.fst\")\n  H = fst.Fst.read(\"H.fst\")\n  LG = fst.determinize(fst.compose(L, G))\n  CLG = fst.determinize(fst.compose(C, LG))\n  HCLG = fst.determinize(fst.compose(H, CLG))\n  HCLG.minimize()                                      # NB: works in-place.\n\nPython variables here use snake_case and constants are in all caps, minus the\nnormal `k` prefix.\n";
 static const char __pyx_k_Unknown_random_arc_selection_typ[] = "Unknown random arc selection type: ";
+static const char __pyx_k_fstlib_fstlib_cext_pywrapfst_pyx[] = "fstlib/fstlib/cext/pywrapfst.pyx";
 static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __reduce__ due to non-trivial __cinit__";
 static const char __pyx_k_self__aiter_self__mfst_cannot_be[] = "self._aiter,self._mfst cannot be converted to a Python object for pickling";
 static const char __pyx_k_self__arc_cannot_be_converted_to[] = "self._arc cannot be converted to a Python object for pickling";
@@ -3766,7 +3766,7 @@ static PyObject *__pyx_n_s_fontsize;
 static PyObject *__pyx_n_s_fspath;
 static PyObject *__pyx_n_s_fst_type;
 static PyObject *__pyx_n_s_fstlib_cext_pywrapfst;
-static PyObject *__pyx_kp_s_fstlib_cext_pywrapfst_pyx;
+static PyObject *__pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx;
 static PyObject *__pyx_n_u_functional;
 static PyObject *__pyx_n_u_g;
 static PyObject *__pyx_n_s_get_fst;
@@ -51330,7 +51330,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_fspath, __pyx_k_fspath, sizeof(__pyx_k_fspath), 0, 0, 1, 1},
   {&__pyx_n_s_fst_type, __pyx_k_fst_type, sizeof(__pyx_k_fst_type), 0, 0, 1, 1},
   {&__pyx_n_s_fstlib_cext_pywrapfst, __pyx_k_fstlib_cext_pywrapfst, sizeof(__pyx_k_fstlib_cext_pywrapfst), 0, 0, 1, 1},
-  {&__pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_k_fstlib_cext_pywrapfst_pyx, sizeof(__pyx_k_fstlib_cext_pywrapfst_pyx), 0, 0, 1, 0},
+  {&__pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_k_fstlib_fstlib_cext_pywrapfst_pyx, sizeof(__pyx_k_fstlib_fstlib_cext_pywrapfst_pyx), 0, 0, 1, 0},
   {&__pyx_n_u_functional, __pyx_k_functional, sizeof(__pyx_k_functional), 0, 1, 0, 1},
   {&__pyx_n_u_g, __pyx_k_g, sizeof(__pyx_k_g), 0, 1, 0, 1},
   {&__pyx_n_s_get_fst, __pyx_k_get_fst, sizeof(__pyx_k_get_fst), 0, 0, 1, 1},
@@ -51727,7 +51727,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__59 = PyTuple_Pack(3, __pyx_n_s_lhs, __pyx_n_s_rhs, __pyx_n_s_weight_2); if (unlikely(!__pyx_tuple__59)) __PYX_ERR(0, 515, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__59);
   __Pyx_GIVEREF(__pyx_tuple__59);
-  __pyx_codeobj__60 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__59, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_n_s_plus, 515, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__60)) __PYX_ERR(0, 515, __pyx_L1_error)
+  __pyx_codeobj__60 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__59, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_n_s_plus, 515, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__60)) __PYX_ERR(0, 515, __pyx_L1_error)
 
   /* "fstlib/cext/pywrapfst.pyx":547
  * 
@@ -51739,7 +51739,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__61 = PyTuple_Pack(3, __pyx_n_s_lhs, __pyx_n_s_rhs, __pyx_n_s_weight_2); if (unlikely(!__pyx_tuple__61)) __PYX_ERR(0, 547, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__61);
   __Pyx_GIVEREF(__pyx_tuple__61);
-  __pyx_codeobj__62 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__61, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_n_s_times, 547, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__62)) __PYX_ERR(0, 547, __pyx_L1_error)
+  __pyx_codeobj__62 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__61, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_n_s_times, 547, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__62)) __PYX_ERR(0, 547, __pyx_L1_error)
 
   /* "fstlib/cext/pywrapfst.pyx":579
  * 
@@ -51751,7 +51751,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__63 = PyTuple_Pack(3, __pyx_n_s_lhs, __pyx_n_s_rhs, __pyx_n_s_weight_2); if (unlikely(!__pyx_tuple__63)) __PYX_ERR(0, 579, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__63);
   __Pyx_GIVEREF(__pyx_tuple__63);
-  __pyx_codeobj__64 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__63, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_n_s_divide, 579, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__64)) __PYX_ERR(0, 579, __pyx_L1_error)
+  __pyx_codeobj__64 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__63, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_n_s_divide, 579, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__64)) __PYX_ERR(0, 579, __pyx_L1_error)
 
   /* "fstlib/cext/pywrapfst.pyx":612
  * 
@@ -51763,7 +51763,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__65 = PyTuple_Pack(3, __pyx_n_s_w, __pyx_n_s_n, __pyx_n_s_weight_2); if (unlikely(!__pyx_tuple__65)) __PYX_ERR(0, 612, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__65);
   __Pyx_GIVEREF(__pyx_tuple__65);
-  __pyx_codeobj__66 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__65, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_n_s_power, 612, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__66)) __PYX_ERR(0, 612, __pyx_L1_error)
+  __pyx_codeobj__66 = (PyObject*)__Pyx_PyCode_New(2, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__65, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_n_s_power, 612, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__66)) __PYX_ERR(0, 612, __pyx_L1_error)
 
   /* "fstlib/cext/pywrapfst.pyx":1422
  * 
@@ -51775,7 +51775,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__67 = PyTuple_Pack(1, __pyx_n_s_state); if (unlikely(!__pyx_tuple__67)) __PYX_ERR(0, 1422, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__67);
   __Pyx_GIVEREF(__pyx_tuple__67);
-  __pyx_codeobj__68 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__67, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_n_s_read_from_string, 1422, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__68)) __PYX_ERR(0, 1422, __pyx_L1_error)
+  __pyx_codeobj__68 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__67, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_n_s_read_from_string, 1422, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__68)) __PYX_ERR(0, 1422, __pyx_L1_error)
 
   /* "fstlib/cext/pywrapfst.pyx":4148
  * 
@@ -51787,7 +51787,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__69 = PyTuple_Pack(7, __pyx_n_s_ifst, __pyx_n_s_delta, __pyx_n_s_nstate, __pyx_n_s_queue_type, __pyx_n_s_reverse, __pyx_n_s_distance, __pyx_n_s_weight); if (unlikely(!__pyx_tuple__69)) __PYX_ERR(0, 4148, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__69);
   __Pyx_GIVEREF(__pyx_tuple__69);
-  __pyx_codeobj__70 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__69, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_cext_pywrapfst_pyx, __pyx_n_s_shortestdistance, 4148, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__70)) __PYX_ERR(0, 4148, __pyx_L1_error)
+  __pyx_codeobj__70 = (PyObject*)__Pyx_PyCode_New(5, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__69, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_fstlib_fstlib_cext_pywrapfst_pyx, __pyx_n_s_shortestdistance, 4148, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__70)) __PYX_ERR(0, 4148, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
