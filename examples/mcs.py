@@ -1,14 +1,13 @@
 #%% imports
+import os
 import sys
 import numpy as np
 from sklearn.manifold import MDS
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-sys.path.append('../..')
-sys.path.append('../../../GenomicsToolkit')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import fstlib
-import genometools as gtools
 
 #%% symbol table
 symbols = ['1','2', '3', '|'] # unmeth, partially meth, fully meth
@@ -56,4 +55,5 @@ spin = fstlib.tools.strings(sp, tape='input')
 spout = fstlib.tools.strings(sp, tape='output')
 print('%s\n%s' % (spin.iloc[0,0], spout.iloc[0,0]))
 print(spin.iloc[0,1])
+
 # %%

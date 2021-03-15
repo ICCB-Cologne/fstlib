@@ -1,7 +1,13 @@
+####################################################################################
+## Simple example of an HMM implemented using the FSTlib library (without training)
+####################################################################################
+
 #%% imports
+import os
 import sys
 import numpy as np
-sys.path.append('../..')
+from IPython.display import display
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import fstlib
 
 #%% create symbol table
@@ -31,7 +37,6 @@ hmm.add_arc(1,('T','f',-np.log(0.2),0))
 hmm.verify()
 display(hmm)
 print(hmm.to_real())
-#hmm.view()
 
 #%% create data
 seq = 'HHTHTHTHHHHHHTHHHHHHHTHTHHTHT'
