@@ -9,7 +9,7 @@ FSTlib contains modified code from [OpenFST](http://www.openfst.org) as permitte
 
 ## Download: ##
 
-* Clone the FSTlib repository using "git clone https://bitbucket.org/rfs/fstlib.git"
+* Clone the FSTlib repository using "git clone https://bitbucket.org/rfs/fstlib.git".
 
 ## Installation: ##
 
