@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 IS_WINDOWS = os.name=="nt"
