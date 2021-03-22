@@ -1,9 +1,11 @@
+import logging.config
 import os
-import sys
-import logging
 
-# logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import yaml
+
+with open(os.path.join(os.path.dirname(__file__), 'logging_conf.yaml'), 'rt') as f:
+    config = yaml.safe_load(f.read())
+logging.config.dictConfig(config)
 
 IS_WINDOWS = os.name=="nt"
 
@@ -22,7 +24,4 @@ from fstlib.ext import *
 import fstlib.algos
 import fstlib.factory
 import fstlib.tools
-
-
-
 

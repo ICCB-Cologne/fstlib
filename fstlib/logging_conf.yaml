@@ -1,0 +1,26 @@
+version: 1
+
+formatters:
+    simple:
+        format: "%(levelname)s %(name)s:\t%(message)s"
+
+    simple_w_time:
+        format: "%(asctime)s - %(levelname)s %(name)s:\t%(message)s"
+
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: simple
+
+
+loggers:  
+    fstlib:
+        level: CRITICAL
+        handlers: [console]
+        propagate: yes
+    
+    # Loggers in submodules inheret their behavior from the 'medicc' logger but can be individually overwritten
+    # fstlib.algos:
+    #     level: INFO
+    #     handlers: [console]
