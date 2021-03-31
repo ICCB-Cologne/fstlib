@@ -3,7 +3,7 @@ import os
 
 import yaml
 
-with open(os.path.join(os.path.dirname(__file__), 'logging_conf.yaml'), 'rt') as f:
+with open(os.path.join(os.path.dirname(__file__), '../logging_conf.yaml'), 'rt') as f:
     config = yaml.safe_load(f.read())
 logging.config.dictConfig(config)
 
