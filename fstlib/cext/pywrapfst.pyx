@@ -4700,4 +4700,4 @@ cdef class FarWriter:
 
 
 # Masks fst_error_fatal in-module.
-fst.FST_FLAGS_fst_error_fatal = False
+fst.FLAGS_fst_error_fatal = False

@@ -54603,9 +54603,9 @@ if (!__Pyx_RefNanny) {
   /* "fstlib/cext/pywrapfst.pyx":4703
  * 
  * # Masks fst_error_fatal in-module.
- * fst.FST_FLAGS_fst_error_fatal = False             # <<<<<<<<<<<<<<
+ * fst.FLAGS_fst_error_fatal = False             # <<<<<<<<<<<<<<
  */
-  FST_FLAGS_fst_error_fatal = 0;
+  FLAGS_fst_error_fatal = 0;
 
   /* "fstlib/cext/pywrapfst.pyx":1
  * #cython: c_string_encoding=utf8, c_string_type=unicode, language_level=3, nonecheck=True             # <<<<<<<<<<<<<<
