@@ -157,5 +157,26 @@ def _exec_func(func, ifst1, ifst2, delta_min, output, determinize=False, minimiz
             ofst.rmepsilon()
         ofst = fstlib.core.determinize(ofst)
     if minimize:
-        ofst.minimize(delta = delta_min)							
+        ofst.minimize(delta = delta_min)
     output.put(ofst)
+
+
+def strings_to_count_matrix(list_of_strings, symbols=None):
+    """ transforms a list of strings into a count matrix by counting the number of occurences of 
+    each symbol in all strings at each position in the list. """
+    if symbols is None:
+        symbols = list(set(''.join(list_of_strings)))
+        symbols.sort()
+    n = np.max([len(s) for s in list_of_strings]) ## determine length of longest strings
+    m = len(symbols)
+    count_matrix = np.zeros((m, n))
+    for i in range(n):
+        for j in range(len(list_of_strings)):
+            s = list_of_strings[j][i]
+            k = symbols.index(s)
+            count_matrix[k,i] += 1
+
+    return count_matrix, symbols
+
+
+

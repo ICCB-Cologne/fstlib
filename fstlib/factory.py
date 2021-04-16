@@ -134,7 +134,7 @@ def create_kgram_fst(symbol_table, k, gap_cost=None):
 
     return myfst
 
-def from_string(seq, final_weight=None, arc_weight=None, arc_type = 'log', isymbols=None, osymbols=None):
+def from_string(seq, final_weight=None, arc_weight=None, arc_type = 'standard', isymbols=None, osymbols=None):
     myfst = fstlib.Fst(arc_type=arc_type)
     startid = myfst.add_state()
     myfst.set_start(startid)
@@ -194,8 +194,12 @@ def from_array(seq, final_weight=None, arc_weight=None, arc_type = 'standard', s
     myfst.set_final(last_id, final_weight)
     return myfst
 
-def create_fixed_length_hmm_from_count_matrix(count_matrix, symbol_table, keys=None, arc_type = 'log', normalize=True):
-    """ Creates an HMM (a probabilistic FSA) from a matrix of counts """
+def from_count_matrix(count_matrix, symbol_table, keys=None, arc_type = 'log', normalize=True):
+    """ Creates a simple linear prob. FSA from a matrix of counts.
+    The count matrix has a number of rows equal to the number of symbols and a number of
+    columns equal to the length of the sequence. The keys parameter maps row indices in the count matrix
+    to symbol table keys, i.e. keys[i] defines the symbol table key of the i-th row in the count matrix.
+    If normalize is given, all column counts are normalized to sum to 1 (defines probability distribution). """
     st = dict(symbol_table)
     if keys is None:
         keys = list(st.keys())

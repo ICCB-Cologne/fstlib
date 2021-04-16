@@ -1,6 +1,7 @@
 import logging
 
 import pandas as pd
+import numpy as np
 
 import fstlib
 import fstlib.cext.ops
@@ -32,6 +33,7 @@ def info(ifst, name=None):
     info['fst_type'] = ifst.fst_type()
     info['arc_type'] = ifst.arc_type()
     info['nstates'] = ifst.num_states()
+    info['nfinalstates'] = np.sum([ifst.is_final(s) for s in ifst.states()])
     info['narcs'] = 0
     info['ninputeps'] = 0
     info['noutputeps'] = 0
