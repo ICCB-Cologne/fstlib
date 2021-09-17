@@ -18,9 +18,10 @@ DEF_GAP_SYMBOL = '-'
 DEF_DELTA = 0.0009765625
 MAX_INT32 = 2**31 - 1
 
-import fstlib.algos
-import fstlib.factory
-import fstlib.tools
 from fstlib.cext.pywrapfst import *
 from fstlib.core import *
 from fstlib.ext import *
+import fstlib.algos
+import fstlib.factory
+import fstlib.tools
+
