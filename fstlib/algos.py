@@ -6,17 +6,15 @@ Created on 17 May 2010
 FST algorithms
 '''
 
-import sys
-import numpy as np
-import scipy as sp
 import array
-import logging
 import functools
+import logging
+
+import numpy as np
+
 import fstlib.core
 #from fstlib.core import *
 import fstlib.tools
-
-
 
 log = logging.getLogger(__name__)
 
