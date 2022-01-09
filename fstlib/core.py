@@ -372,8 +372,14 @@ class Fst:
 
     @classmethod
     def read_from_string(cls, state):
-        ofst = pywrapfst.Fst.read(state)
+        ofst = pywrapfst.Fst.read_from_string(state)
         return Fst(ofst)
+
+    def __getstate__(self):
+        return self.write_to_string()
+
+    def __setstate__(self, state):
+        self.fst = pywrapfst.Fst.read_from_string(state)
 
 class Path(list):
     """ simple extension of list class that includes a final weight """
