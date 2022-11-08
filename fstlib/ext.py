@@ -49,20 +49,16 @@ def kernel_score(model, ifst1, ifst2):
     if model.arc_type()=='standard':
         distance = fstlib.cext.ops.kernel_score_std(model.fst, ifst1.fst, ifst2.fst)
     elif model.arc_type()=='log':
-        ##distance = fstlib.cext.ops.score_log(model.fst, ifst1.fst, ifst2.fst)
-        distance = None
+        distance = fstlib.cext.ops.kernel_score_log(model.fst, ifst1.fst, ifst2.fst)
     else:
-        distance = None
+        raise FSTlibExtError('Kernel score not implemented for %s semiring' % model.arc_type())
     return distance
 
 def multi_kernel_score(fst1, fst2, fst3, fst4, ifst1, ifst2):
     if fst1.arc_type()=='standard':
         distance = fstlib.cext.ops.multi_kernel_score_std(fst1.fst, fst2.fst, fst3.fst, fst4.fst, ifst1.fst, ifst2.fst)
-    elif fst1.arc_type()=='log':
-        ##distance = fstlib.cext.ops.score_log(model.fst, ifst1.fst, ifst2.fst)
-        distance = None
     else:
-        distance = None
+        raise FSTlibExtError('Multi kernel score not implemented for %s semiring' % fst1.arc_type())
     return distance
 
 def normalize_alphabet(ifst, inplace=False):
@@ -106,3 +102,7 @@ def weight_map(ifst, func):
     newfst = ifst.copy()
     newfst.weight_map(func)
     return newfst
+
+
+class FSTlibExtError(Exception):
+    pass

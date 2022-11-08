@@ -9,4 +9,5 @@ cdef extern from "cops.h" nogil:
     cdef fst.WeightClass shortest_distance_std(const fst.FstClass &, const fst.FstClass &, const fst.FstClass &)
     cdef fst.WeightClass shortest_distance_log(const fst.FstClass &, const fst.FstClass &, const fst.FstClass &)
     cdef fst.WeightClass kernel_score_std_impl(const fst.FstClass &, const fst.FstClass &, const fst.FstClass &)
+    cdef fst.WeightClass kernel_score_log_impl(const fst.FstClass &, const fst.FstClass &, const fst.FstClass &)
     cdef fst.WeightClass multi_kernel_score_std_impl(const fst.FstClass &, const fst.FstClass &, const fst.FstClass &, const fst.FstClass &, const fst.FstClass &, const fst.FstClass &)

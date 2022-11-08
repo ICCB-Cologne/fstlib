@@ -201,6 +201,60 @@ script::WeightClass kernel_score_std_impl(script::FstClass &model, script::FstCl
 	return distance;
 }
 
+script::WeightClass kernel_score_log_impl(script::FstClass &model, script::FstClass &input, script::FstClass &output) {	
+	const Fst<LogArc> *tfst = model.GetFst<LogArc>();
+	const Fst<LogArc> *ifst1 = input.GetFst<LogArc>();
+	const Fst<LogArc> *ifst2 = output.GetFst<LogArc>();
+	
+	ArcSortFst<LogArc, ILabelCompare<LogArc> > input_sorted = ArcSortFst<LogArc, ILabelCompare<LogArc> >(*ifst1, ILabelCompare<LogArc>());
+	ArcSortFst<LogArc, ILabelCompare<LogArc> > output_sorted = ArcSortFst<LogArc, ILabelCompare<LogArc> >(*ifst2, ILabelCompare<LogArc>());
+
+	// set compose options
+	ComposeFstOptions<LogArc> co;
+	//co.gc_limit=0;
+
+	// Container for composition result.
+	InvertFst<LogArc> middle1 = InvertFst<LogArc>(ComposeFst<LogArc>(*tfst, input_sorted, co));
+	ComposeFst<LogArc> middle2 = ComposeFst<LogArc>(*tfst, output_sorted, co);
+	ArcSortFst<LogArc, ILabelCompare<LogArc> > middle2_sorted = ArcSortFst<LogArc, ILabelCompare<LogArc> >(middle2, ILabelCompare<LogArc>());
+	//ArcSortFst<LogArc, OLabelCompare<LogArc> > middle1_sorted = ArcSortFst<LogArc, OLabelCompare<LogArc> >(middle1, OLabelCompare<LogArc>());
+	ComposeFst<LogArc> result = ComposeFst<LogArc>(middle1, middle2_sorted, co);
+	
+
+	std::vector<LogArc::Weight> typed_distance;
+	LogArc::Weight retval;
+	script::WeightClass distance;
+
+	//NaturalShortestFirstQueue<LogArc::StateId, LogArc::Weight> state_queue(typed_distance);
+	//ShortestDistanceOptions<LogArc, NaturalShortestFirstQueue<LogArc::StateId, LogArc::Weight>, AnyArcFilter<LogArc> > opts(&state_queue, AnyArcFilter<LogArc>());
+	//opts.first_path=true;
+	
+	using StateId = typename LogArc::StateId;
+	using Weight = typename LogArc::Weight;
+
+	if (Weight::Properties() & kRightSemiring) {
+		ShortestDistance(result, &typed_distance);
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval =  LogArc::Weight::NoWeight();
+		}
+		Adder<Weight> adder;  // maintains cumulative sum accurately
+		for (StateId state = 0; state < typed_distance.size(); ++state) {
+			adder.Add(Times(typed_distance[state], result.Final(state)));
+		}
+		retval = adder.Sum();
+	} else {
+		ShortestDistance(result, &typed_distance, true, mydelta);
+		const auto state = result.Start();
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval = LogArc::Weight::NoWeight();
+		}
+		retval = state != kNoStateId && state < typed_distance.size() ? typed_distance[state] : Weight::Zero();
+	}
+	
+	distance = script::WeightClass(retval);
+	return distance;
+}
+
 script::WeightClass multi_kernel_score_std_impl(script::FstClass &loh, script::FstClass &wgd, script::FstClass &gain, script::FstClass &loss, script::FstClass &input, script::FstClass &output) {	
 	const Fst<StdArc> *lohfst = loh.GetFst<StdArc>();
     const Fst<StdArc> *wgdfst = wgd.GetFst<StdArc>();
