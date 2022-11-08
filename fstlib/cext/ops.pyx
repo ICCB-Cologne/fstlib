@@ -32,7 +32,6 @@ cpdef Weight score_std(Fst model, Fst ifst1, Fst ifst2):
   retval = Weight(model._fst.get().WeightType(), distance.ToString())
   return retval
 
-
 cpdef Weight score_log(Fst model, Fst ifst1, Fst ifst2):
   distance = shortest_distance_log(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst))
   retval = Weight(model._fst.get().WeightType(), distance.ToString())
@@ -43,4 +42,8 @@ cpdef Weight kernel_score_std(Fst model, Fst ifst1, Fst ifst2):
   retval = Weight(model._fst.get().WeightType(), distance.ToString())
   return retval
 
+cpdef Weight multi_kernel_score_std(Fst loh, Fst wgd, Fst gain, Fst loss, Fst ifst1, Fst ifst2):
+  distance = multi_kernel_score_std_impl(deref(loh._fst), deref(wgd._fst), deref(gain._fst), deref(loss._fst), deref(ifst1._fst), deref(ifst2._fst))
+  retval = Weight(loh._fst.get().WeightType(), distance.ToString())
+  return retval
 

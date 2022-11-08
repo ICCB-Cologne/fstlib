@@ -38,40 +38,30 @@ def paths(infst, tape='input'):
     result = list(zip(paths, scores))
     return result
 
-def strings(infst, tape='input', delimiter="", to_real=False):
+def strings(infst, delimiter="", to_real=False):
     """ returns all strings from a fsa """
     algo = fstlib.algos.PathDepthFirstSearch(infst)
             
-    paths=list()
+    ipaths=list()
+    opaths=list()
     scores=list()
     for path in algo.get_paths():
-        if tape == 'input':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            seq = delimiter.join([syms[p.ilabel] if syms is not None else str(p.ilabel) for p in path])
-        elif tape == 'output':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = delimiter.join([syms[p.olabel] if syms is not None else str(p.olabel) for p in path])
-        elif tape == 'both':
-            isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = delimiter.join(["%s:%s" % 
-                         (isyms[p.ilabel] if isyms is not None else str(p.ilabel), 
-                          osyms[p.olabel] if osyms is not None else str(p.olabel)) for p in path])
-        else:
-            raise FstToolsError('Unknown tape parameter %s' % tape)
+        isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
+        iseq = delimiter.join([isyms[p.ilabel] if isyms is not None else str(p.ilabel) for p in path])
+        osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
+        oseq = delimiter.join([osyms[p.olabel] if osyms is not None else str(p.olabel) for p in path])
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:
             score = functools.reduce(fstlib.times, [p.weight for p in path] + [path.finalWeight,])
         else:
             raise FstToolsError('semiring not implemented')
-        paths.append(seq)
+        ipaths.append(iseq)
+        opaths.append(oseq)
         scores.append(float(score))
-    if len(paths)==0:
-        paths.append('[no path]')
-        scores.append(np.inf)
-    digits = int(np.log10(len(paths)))+1
-    result = pd.DataFrame(data=list(zip(paths, scores)), columns=['string','weight'])
+
+    digits = int(np.log10(len(ipaths)))+1
+    result = pd.DataFrame(data=list(zip(ipaths, opaths, scores)), columns=['input', 'output','weight'])
     result.sort_values('weight', inplace=True)
-    result.index=[("path%%.%dd" % digits) % i for i in range(len(paths))]
+    result.index=[("path%%.%dd" % digits) % i for i in range(len(ipaths))]
     if to_real:
         result.weight = np.exp(-result.weight)
 

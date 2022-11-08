@@ -201,4 +201,58 @@ script::WeightClass kernel_score_std_impl(script::FstClass &model, script::FstCl
 	return distance;
 }
 
+script::WeightClass multi_kernel_score_std_impl(script::FstClass &loh, script::FstClass &wgd, script::FstClass &gain, script::FstClass &loss, script::FstClass &input, script::FstClass &output) {	
+	const Fst<StdArc> *lohfst = loh.GetFst<StdArc>();
+    const Fst<StdArc> *wgdfst = wgd.GetFst<StdArc>();
+    const Fst<StdArc> *gainfst = gain.GetFst<StdArc>();
+    const Fst<StdArc> *lossfst = loss.GetFst<StdArc>();
+	const Fst<StdArc> *ifst1 = input.GetFst<StdArc>();
+	const Fst<StdArc> *ifst2 = output.GetFst<StdArc>();
+	
+	ArcSortFst<StdArc, ILabelCompare<StdArc> > input_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst1, ILabelCompare<StdArc>());
+	ArcSortFst<StdArc, ILabelCompare<StdArc> > output_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst2, ILabelCompare<StdArc>());
+
+	// set compose options
+	ComposeFstOptions<StdArc> co;
+	//co.gc_limit=0;
+
+    InvertFst<StdArc> left = InvertFst<StdArc>(ComposeFst<StdArc>(*lohfst, ComposeFst<StdArc>(*wgdfst, ComposeFst<StdArc>(*gainfst, ComposeFst<StdArc>(*lossfst, input_sorted, co), co), co), co));
+    ComposeFst<StdArc> right = ComposeFst<StdArc>(*lohfst, ComposeFst<StdArc>(*wgdfst, ComposeFst<StdArc>(*gainfst, ComposeFst<StdArc>(*lossfst, output_sorted, co), co), co), co);
+    ArcSortFst<StdArc, ILabelCompare<StdArc> > right_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(right, ILabelCompare<StdArc>());
+	ComposeFst<StdArc> result = ComposeFst<StdArc>(left, right_sorted, co);
+
+	std::vector<StdArc::Weight> typed_distance;
+	StdArc::Weight retval;
+	script::WeightClass distance;
+
+	NaturalShortestFirstQueue<StdArc::StateId, StdArc::Weight> state_queue(typed_distance);
+	ShortestDistanceOptions<StdArc, NaturalShortestFirstQueue<StdArc::StateId, StdArc::Weight>, AnyArcFilter<StdArc> > opts(&state_queue, AnyArcFilter<StdArc>());
+	opts.first_path=true;
+	
+	using StateId = typename StdArc::StateId;
+	using Weight = typename StdArc::Weight;
+
+	if (Weight::Properties() & kRightSemiring) {
+		ShortestDistance(result, &typed_distance, opts);
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval =  StdArc::Weight::NoWeight();
+		}
+		Adder<Weight> adder;  // maintains cumulative sum accurately
+		for (StateId state = 0; state < typed_distance.size(); ++state) {
+			adder.Add(Times(typed_distance[state], result.Final(state)));
+		}
+		retval = adder.Sum();
+	} else {
+		ShortestDistance(result, &typed_distance, true, mydelta);
+		const auto state = result.Start();
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval = StdArc::Weight::NoWeight();
+		}
+		retval = state != kNoStateId && state < typed_distance.size() ? typed_distance[state] : Weight::Zero();
+	}
+	
+	distance = script::WeightClass(retval);
+	return distance;
+}
+
 #endif

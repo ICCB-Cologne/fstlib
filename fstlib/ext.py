@@ -55,7 +55,17 @@ def kernel_score(model, ifst1, ifst2):
         distance = None
     return distance
 
-def normalize_alphabet(ifst, inplace=True):
+def multi_kernel_score(fst1, fst2, fst3, fst4, ifst1, ifst2):
+    if fst1.arc_type()=='standard':
+        distance = fstlib.cext.ops.multi_kernel_score_std(fst1.fst, fst2.fst, fst3.fst, fst4.fst, ifst1.fst, ifst2.fst)
+    elif fst1.arc_type()=='log':
+        ##distance = fstlib.cext.ops.score_log(model.fst, ifst1.fst, ifst2.fst)
+        distance = None
+    else:
+        distance = None
+    return distance
+
+def normalize_alphabet(ifst, inplace=False):
     """Normalizes fst so that outgoing transition weights of the same input symbol sum to 1"""
     
     ## convert to real if necessary

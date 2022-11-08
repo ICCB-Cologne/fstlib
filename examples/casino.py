@@ -54,15 +54,13 @@ display(unrolled)
 #%% Viterbi solution
 sp = fstlib.determinize(fstlib.shortestpath(unrolled))
 print(sp.to_real())
-fstlib.tools.strings(sp, tape='input')
-fstlib.tools.strings(sp, tape='output')
+fstlib.tools.strings(sp)
 
 #%% MAP solution
 posterior = fstlib.algos.posterior_decoding(unrolled.project('output'))
 
 map = fstlib.determinize(fstlib.shortestpath(fstlib.arcmap(posterior, map_type='to_standard')))
-fstlib.tools.strings(map, tape='input')
-fstlib.tools.strings(map, tape='output')
+fstlib.tools.strings(map)
 
 
 
