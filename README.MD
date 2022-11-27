@@ -16,7 +16,7 @@ FSTlib contains modified code from [OpenFST](http://www.openfst.org) as permitte
 * Run **python setup.py build_ext --inplace** inside the fstlib/cext subfolder to compile the C extensions.
 
 ## Contact: ##
-Email questions, feature requests and bug reports to **Roland Schwarz, roland.schwarz@mdc-berlin.de**.
+Email questions, feature requests and bug reports to **Roland Schwarz, roland@schwarzlab.de**.
 
 ## Please cite: ##
 
