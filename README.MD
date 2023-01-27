@@ -20,7 +20,7 @@ Email questions, feature requests and bug reports to **Roland Schwarz, roland@sc
 
 ## Please cite: ##
 
-Petkovic M, Watkins TBK, Colliver E, Laskina S, Swanton C, Haase K, Schwarz RF.  
+Kaufmann T, Petkovic M, Watkins TBK, Colliver EC, ..., Schwarz RF.
 [**MEDICC2: whole-genome doubling aware copy-number phylogenies for cancer evolution**](https://doi.org/10.1186/s13059-022-02794-9)
 Genome Biology (23) 241 (2022)
 
