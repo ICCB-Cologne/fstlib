@@ -54,6 +54,13 @@ def kernel_score(model, ifst1, ifst2):
         raise FSTlibExtError('Kernel score not implemented for %s semiring' % model.arc_type())
     return distance
 
+def multi_score(fst1, fst2, fst3, ifst1, ifst2):
+    if fst1.arc_type()=='standard':
+        distance = fstlib.cext.ops.multi_score_std(fst1.fst, fst2.fst, fst3.fst, ifst1.fst, ifst2.fst)
+    else:
+        raise FSTlibExtError('Multi score not implemented for %s semiring' % fst1.arc_type())
+    return distance
+
 def multi_kernel_score(fst1, fst2, fst3, fst4, ifst1, ifst2):
     if fst1.arc_type()=='standard':
         distance = fstlib.cext.ops.multi_kernel_score_std(fst1.fst, fst2.fst, fst3.fst, fst4.fst, ifst1.fst, ifst2.fst)

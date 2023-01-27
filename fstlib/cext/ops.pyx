@@ -22,18 +22,17 @@ cpdef MutableFst align(Fst model, Fst ifst1, Fst ifst2):
   cdef unique_ptr[fst.VectorFstClass] tfst
   tfst.reset(new fst.VectorFstClass(ifst1.arc_type()))
 
-  cdef fst.WeightClass distance
-  shortest_path(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst), tfst.get())
+  align_std_impl(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst), tfst.get())
 
   return _init_MutableFst(tfst.release())
 
 cpdef Weight score_std(Fst model, Fst ifst1, Fst ifst2):
-  distance = shortest_distance_std(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst))
+  distance = score_std_impl(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst))
   retval = Weight(model._fst.get().WeightType(), distance.ToString())
   return retval
 
 cpdef Weight score_log(Fst model, Fst ifst1, Fst ifst2):
-  distance = shortest_distance_log(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst))
+  distance = score_log_impl(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst))
   retval = Weight(model._fst.get().WeightType(), distance.ToString())
   return retval
 
@@ -45,6 +44,11 @@ cpdef Weight kernel_score_std(Fst model, Fst ifst1, Fst ifst2):
 cpdef Weight kernel_score_log(Fst model, Fst ifst1, Fst ifst2):
   distance = kernel_score_log_impl(deref(model._fst), deref(ifst1._fst), deref(ifst2._fst))
   retval = Weight(model._fst.get().WeightType(), distance.ToString())
+  return retval
+
+cpdef Weight multi_score_std(Fst loh, Fst wgd, Fst gl, Fst ifst1, Fst ifst2):
+  distance = multi_score_std_impl(deref(loh._fst), deref(wgd._fst), deref(gl._fst), deref(ifst1._fst), deref(ifst2._fst))
+  retval = Weight(loh._fst.get().WeightType(), distance.ToString())
   return retval
 
 cpdef Weight multi_kernel_score_std(Fst loh, Fst wgd, Fst gain, Fst loss, Fst ifst1, Fst ifst2):

@@ -332,6 +332,16 @@ class Fst:
         for plotting and printing purposes. """
         return fstlib.weight_map(self, fstlib.algos.map_log_to_real)
 
+    def to_svg(self, **kwargs):
+        g = self.to_graphviz(**kwargs)
+        g.format='svg'
+        return g
+
+    def to_png(self, **kwargs):
+        g = self.to_graphviz(**kwargs)
+        g.format = 'png'
+        return g
+
     def topsort(self):
         self.fst.topsort()
         return self
