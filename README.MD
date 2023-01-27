@@ -1,6 +1,6 @@
 # FSTlib - Python interface to the [OpenFST](http://www.openfst.org) Library with extensions
 
-### Version 0.1 beta (Mar 2021).
+### Version 0.2 for OpenFST 1.8.2 (Jan 2023).
 
 ## License: 
 FSTlib is available under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html).
@@ -16,18 +16,14 @@ FSTlib contains modified code from [OpenFST](http://www.openfst.org) as permitte
 * Run **python setup.py build_ext --inplace** inside the fstlib/cext subfolder to compile the C extensions.
 
 ## Contact: ##
-Email questions, feature requests and bug reports to **Roland Schwarz, roland.schwarz@mdc-berlin.de**.
+Email questions, feature requests and bug reports to **Roland Schwarz, roland@schwarzlab.de**.
 
 ## Please cite: ##
 
 Petkovic M, Watkins TBK, Colliver E, Laskina S, Swanton C, Haase K, Schwarz RF.  
-**Whole-genome doubling-aware copy number phylogenies for cancer evolution with MEDICC2.**  
-bioRxiv 2021 Feb 28; doi: 10.1101/2021.02.28.433227  
-
-Schwarz RF, Trinh A, Sipos B, Brenton JD, Goldman N, Markowetz F.  
-**Phylogenetic quantification of intra-tumour heterogeneity.**  
-PLoS Comput Biol. 2014 Apr 17;10(4):e1003535. doi: 10.1371/journal.pcbi.1003535.
+[**MEDICC2: whole-genome doubling aware copy-number phylogenies for cancer evolution**](https://doi.org/10.1186/s13059-022-02794-9)
+Genome Biology (23) 241 (2022)
 
 
 
-March 2021, Roland Schwarz
+January 2023, Roland Schwarz
