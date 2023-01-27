@@ -9,11 +9,11 @@ FSTlib contains modified code from [OpenFST](http://www.openfst.org) as permitte
 
 ## Download: ##
 
-* Clone the FSTlib repository using "git clone https://bitbucket.org/rfs/fstlib.git".
+* Clone the FSTlib repository using "git clone https://bitbucket.org/schwarzlab/fstlib.git".
 
 ## Installation: ##
 
-* Run **python setup.py build_ext --inplace** inside the fstlib/cext subfolder to compile the C extensions.
+* Run **python setup.py build_ext --inplace** inside the root project folder to compile the C extensions.
 
 ## Contact: ##
 Email questions, feature requests and bug reports to **Roland Schwarz, roland@schwarzlab.de**.
