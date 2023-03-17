@@ -48,28 +48,32 @@ def strings(infst, tape='input', delimiter="", to_real=False):
         if tape == 'input':
             syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
             seq = delimiter.join([syms[p.ilabel] if syms is not None else str(p.ilabel) for p in path])
+            paths.append(seq)
         elif tape == 'output':
             syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
             seq = delimiter.join([syms[p.olabel] if syms is not None else str(p.olabel) for p in path])
+            paths.append(seq)
         elif tape == 'both':
-            isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = delimiter.join(["%s:%s" % 
-                         (isyms[p.ilabel] if isyms is not None else str(p.ilabel), 
-                          osyms[p.olabel] if osyms is not None else str(p.olabel)) for p in path])
+            syms_in = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
+            seq_in = delimiter.join([syms_in[p.ilabel] if syms_in is not None else str(p.ilabel) for p in path])
+            syms_out = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
+            seq_out = delimiter.join([syms_out[p.olabel] if syms_out is not None else str(p.olabel) for p in path])
+            paths.append((seq_in, seq_out))
         else:
             raise FstToolsError('Unknown tape parameter %s' % tape)
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:
             score = functools.reduce(fstlib.times, [p.weight for p in path] + [path.finalWeight,])
         else:
             raise FstToolsError('semiring not implemented')
-        paths.append(seq)
         scores.append(float(score))
     if len(paths)==0:
         paths.append('[no path]')
         scores.append(np.inf)
     digits = int(np.log10(len(paths)))+1
-    result = pd.DataFrame(data=list(zip(paths, scores)), columns=['string','weight'])
+    if tape == 'both':
+        result = pd.DataFrame(data={'input': [p[0] for p in paths], 'output': [p[1] for p in paths], 'weight': scores})
+    else:
+        result = pd.DataFrame(data=list(zip(paths, scores)), columns=['string', 'weight'])
     result.sort_values('weight', inplace=True)
     result.index=[("path%%.%dd" % digits) % i for i in range(len(paths))]
     if to_real:
