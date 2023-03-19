@@ -219,8 +219,8 @@ class Fst:
         self.fst.prune(delta, nstate, weight)
         return self
 
-    def push(self, delta=fstlib.DEF_DELTA, remove_total_weight=False, to_final=False):
-        self.fst.push(delta, remove_total_weight, to_final)
+    def push(self, delta=fstlib.DEF_DELTA, remove_total_weight=False, reweight_type="to_initial"):
+        self.fst.push(delta, remove_total_weight, reweight_type)
         return self
 
     def relabel_pairs(self, ipairs=None, opairs=None):
@@ -484,11 +484,11 @@ def prune(ifst, delta=fstlib.DEF_DELTA, nstate=fstlib.NO_STATE_ID, weight=None):
     newfst = pywrapfst.prune(ifst.fst, delta, nstate, weight)
     return Fst(newfst)
 
-def push(ifst, delta=fstlib.DEF_DELTA, push_weights=True, push_labels=False, 
-         remove_common_affix=False, remove_total_weight=False, to_final=False):
-    if remove_total_weight:
-        logger.warn('remove_total_weight dysfunctional due to bug in pywrapfst. Use destructive method instead.')
-    newfst = pywrapfst.push(ifst.fst, delta, push_weights, push_labels, remove_common_affix, remove_total_weight, to_final)
+def push(ifst, delta=fstlib.DEF_DELTA, push_weights=False, push_labels=False, 
+         remove_common_affix=False, remove_total_weight=False, reweight_type="to_initial"):
+    #if remove_total_weight:
+    #    logger.warn('remove_total_weight dysfunctional due to bug in pywrapfst. Use destructive method instead.')
+    newfst = pywrapfst.push(ifst.fst, delta, push_weights, push_labels, remove_common_affix, remove_total_weight, reweight_type)
     return Fst(newfst)
 
 def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DEF_DELTA, seed='auto', select='uniform', max_length=fstlib.MAX_INT32):
