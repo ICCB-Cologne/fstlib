@@ -486,10 +486,14 @@ def prune(ifst, delta=fstlib.DEF_DELTA, nstate=fstlib.NO_STATE_ID, weight=None):
 
 def push(ifst, delta=fstlib.DEF_DELTA, push_weights=False, push_labels=False, 
          remove_common_affix=False, remove_total_weight=False, reweight_type="to_initial"):
-    #if remove_total_weight:
-    #    logger.warn('remove_total_weight dysfunctional due to bug in pywrapfst. Use destructive method instead.')
     newfst = pywrapfst.push(ifst.fst, delta, push_weights, push_labels, remove_common_affix, remove_total_weight, reweight_type)
-    return Fst(newfst)
+    newfst = Fst(newfst)
+    if remove_total_weight:
+        logger.warn("'remove_total_weight' is not working in pywrapfst. Use destructive method instead. We're using a workaround here which might or might not do what you expect.")
+        for state in newfst.states():
+            if newfst.is_final(state):
+                newfst.set_final(state, fstlib.Weight.zero(newfst.weight_type()))
+    return newfst
 
 def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DEF_DELTA, seed='auto', select='uniform', max_length=fstlib.MAX_INT32):
     if seed == 'auto':
