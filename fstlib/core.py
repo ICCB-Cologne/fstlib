@@ -502,14 +502,14 @@ def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DEF_DELTA, seed='auto', s
         seed = int(seed)
     return pywrapfst.randequivalent(ifst1.fst, ifst2.fst, npath, delta, select, max_length, seed)
 
-def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, remove_total_weight=False, weighted=False, seed='auto', verbose=False):
+def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, weighted=False, remove_total_weight=False, seed='auto', verbose=False):
     if seed == 'auto':
         seed = _generate_seed()
         if verbose:
             logging.info('Seed = %d' % int(seed))
     else:
         seed = int(seed)
-    newfst = pywrapfst.randgen(ifst.fst, npath, select, max_length, remove_total_weight, weighted, seed)
+    newfst = pywrapfst.randgen(ifst.fst, npath, select, max_length, weighted, remove_total_weight, seed)
     return Fst(newfst)
 
 def replace(pairs, call_arc_labeling='input',  return_arc_labeling='neither', 

@@ -68,6 +68,28 @@ def multi_kernel_score(fst1, fst2, fst3, fst4, ifst1, ifst2):
         raise FSTlibExtError('Multi kernel score not implemented for %s semiring' % fst1.arc_type())
     return distance
 
+def normalize(ifst, inplace=False):
+    """Normalizes fst so that all outgoing transitions sum to 1."""
+    
+    ## convert to real if necessary
+    if inplace:
+        ofst = ifst
+    else:
+        ofst = ifst.copy()
+        
+    ofst.weight_map(fstlib.algos.map_log_to_real)
+
+    for state in ofst.states():
+        total_arcweights = np.sum([float(arc.weight) for arc in ofst.arcs(state)])
+        mai = ofst.mutable_arcs(state)
+        for arc in mai:
+            arc.weight = fstlib.Weight(ofst.weight_type(), float(arc.weight) / total_arcweights)
+            mai.set_value(arc)
+
+    ## convert back
+    ofst.weight_map(fstlib.algos.map_real_to_log)
+    return ofst
+
 def normalize_alphabet(ifst, inplace=False):
     """Normalizes fst so that outgoing transition weights of the same input symbol sum to 1"""
     
@@ -90,6 +112,12 @@ def normalize_alphabet(ifst, inplace=False):
 
     ## convert back
     ofst.weight_map(fstlib.algos.map_real_to_log)
+    return ofst
+
+def project(ifst, project_type='input'):
+    """ Provides a non-destructive push operation, which pywrapfst doesn't have. """
+    ofst = ifst.copy()
+    ofst.project(project_type)
     return ofst
 
 def read(source):
