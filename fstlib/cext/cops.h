@@ -9,14 +9,17 @@
 #include <iomanip>
 #include <set>
 #include <map>
+// #include <chrono>
+
 
 //DEFINE_int32(v, 10, "v");
 const float mydelta = 1.0F/(8192.0F*4);
 
 using namespace fst;
+// using namespace std::chrono;
 
 //void shortest_path(script::FstClass &model, script::FstClass &input, script::FstClass &output, script::MutableFstClass* path, std::vector<script::WeightClass>* distance) {
-void shortest_path(script::FstClass &model, script::FstClass &input, script::FstClass &output, script::MutableFstClass* path) {	
+void align_std_impl(script::FstClass &model, script::FstClass &input, script::FstClass &output, script::MutableFstClass* path) {	
 	const Fst<StdArc> *tfst = model.GetFst<StdArc>();
 	const Fst<StdArc> *ifst1 = input.GetFst<StdArc>();
 	const Fst<StdArc> *ifst2 = output.GetFst<StdArc>();
@@ -47,11 +50,12 @@ void shortest_path(script::FstClass &model, script::FstClass &input, script::Fst
 	//return distance;
 }
 
-script::WeightClass shortest_distance_std(script::FstClass &model, script::FstClass &input, script::FstClass &output) {	
-	const Fst<StdArc> *tfst = model.GetFst<StdArc>();
+script::WeightClass score_std_impl(script::FstClass &model, script::FstClass &input, script::FstClass &output) {	
+    const Fst<StdArc> *tfst = model.GetFst<StdArc>();
 	const Fst<StdArc> *ifst1 = input.GetFst<StdArc>();
 	const Fst<StdArc> *ifst2 = output.GetFst<StdArc>();
-	
+
+	// auto start = high_resolution_clock::now();	
 	ArcSortFst<StdArc, OLabelCompare<StdArc> > input_sorted = ArcSortFst<StdArc, OLabelCompare<StdArc> >(*ifst1, OLabelCompare<StdArc>());
 	ArcSortFst<StdArc, ILabelCompare<StdArc> > output_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst2, ILabelCompare<StdArc>());
 
@@ -94,10 +98,13 @@ script::WeightClass shortest_distance_std(script::FstClass &model, script::FstCl
 	}
 	
 	distance = script::WeightClass(retval);
+    // auto stop = high_resolution_clock::now();
+    // auto duration = duration_cast<milliseconds>(stop - start);
+    // std::cout << duration.count() << std::endl;
 	return distance;
 }
 
-script::WeightClass shortest_distance_log(script::FstClass &model, script::FstClass &input, script::FstClass &output) {	
+script::WeightClass score_log_impl(script::FstClass &model, script::FstClass &input, script::FstClass &output) {	
 	const Fst<LogArc> *tfst = model.GetFst<LogArc>();
 	const Fst<LogArc> *ifst1 = input.GetFst<LogArc>();
 	const Fst<LogArc> *ifst2 = output.GetFst<LogArc>();
@@ -166,6 +173,163 @@ script::WeightClass kernel_score_std_impl(script::FstClass &model, script::FstCl
 	//ArcSortFst<StdArc, OLabelCompare<StdArc> > middle1_sorted = ArcSortFst<StdArc, OLabelCompare<StdArc> >(middle1, OLabelCompare<StdArc>());
 	ComposeFst<StdArc> result = ComposeFst<StdArc>(middle1, middle2_sorted, co);
 	
+
+	std::vector<StdArc::Weight> typed_distance;
+	StdArc::Weight retval;
+	script::WeightClass distance;
+
+	NaturalShortestFirstQueue<StdArc::StateId, StdArc::Weight> state_queue(typed_distance);
+	ShortestDistanceOptions<StdArc, NaturalShortestFirstQueue<StdArc::StateId, StdArc::Weight>, AnyArcFilter<StdArc> > opts(&state_queue, AnyArcFilter<StdArc>());
+	opts.first_path=true;
+	
+	using StateId = typename StdArc::StateId;
+	using Weight = typename StdArc::Weight;
+
+	if (Weight::Properties() & kRightSemiring) {
+		ShortestDistance(result, &typed_distance, opts);
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval =  StdArc::Weight::NoWeight();
+		}
+		Adder<Weight> adder;  // maintains cumulative sum accurately
+		for (StateId state = 0; state < typed_distance.size(); ++state) {
+			adder.Add(Times(typed_distance[state], result.Final(state)));
+		}
+		retval = adder.Sum();
+	} else {
+		ShortestDistance(result, &typed_distance, true, mydelta);
+		const auto state = result.Start();
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval = StdArc::Weight::NoWeight();
+		}
+		retval = state != kNoStateId && state < typed_distance.size() ? typed_distance[state] : Weight::Zero();
+	}
+	
+	distance = script::WeightClass(retval);
+	return distance;
+}
+
+script::WeightClass kernel_score_log_impl(script::FstClass &model, script::FstClass &input, script::FstClass &output) {	
+	const Fst<LogArc> *tfst = model.GetFst<LogArc>();
+	const Fst<LogArc> *ifst1 = input.GetFst<LogArc>();
+	const Fst<LogArc> *ifst2 = output.GetFst<LogArc>();
+	
+	ArcSortFst<LogArc, ILabelCompare<LogArc> > input_sorted = ArcSortFst<LogArc, ILabelCompare<LogArc> >(*ifst1, ILabelCompare<LogArc>());
+	ArcSortFst<LogArc, ILabelCompare<LogArc> > output_sorted = ArcSortFst<LogArc, ILabelCompare<LogArc> >(*ifst2, ILabelCompare<LogArc>());
+
+	// set compose options
+	ComposeFstOptions<LogArc> co;
+	//co.gc_limit=0;
+
+	// Container for composition result.
+	InvertFst<LogArc> middle1 = InvertFst<LogArc>(ComposeFst<LogArc>(*tfst, input_sorted, co));
+	ComposeFst<LogArc> middle2 = ComposeFst<LogArc>(*tfst, output_sorted, co);
+	ArcSortFst<LogArc, ILabelCompare<LogArc> > middle2_sorted = ArcSortFst<LogArc, ILabelCompare<LogArc> >(middle2, ILabelCompare<LogArc>());
+	//ArcSortFst<LogArc, OLabelCompare<LogArc> > middle1_sorted = ArcSortFst<LogArc, OLabelCompare<LogArc> >(middle1, OLabelCompare<LogArc>());
+	ComposeFst<LogArc> result = ComposeFst<LogArc>(middle1, middle2_sorted, co);
+	
+
+	std::vector<LogArc::Weight> typed_distance;
+	LogArc::Weight retval;
+	script::WeightClass distance;
+
+	//NaturalShortestFirstQueue<LogArc::StateId, LogArc::Weight> state_queue(typed_distance);
+	//ShortestDistanceOptions<LogArc, NaturalShortestFirstQueue<LogArc::StateId, LogArc::Weight>, AnyArcFilter<LogArc> > opts(&state_queue, AnyArcFilter<LogArc>());
+	//opts.first_path=true;
+	
+	using StateId = typename LogArc::StateId;
+	using Weight = typename LogArc::Weight;
+
+	if (Weight::Properties() & kRightSemiring) {
+		ShortestDistance(result, &typed_distance);
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval =  LogArc::Weight::NoWeight();
+		}
+		Adder<Weight> adder;  // maintains cumulative sum accurately
+		for (StateId state = 0; state < typed_distance.size(); ++state) {
+			adder.Add(Times(typed_distance[state], result.Final(state)));
+		}
+		retval = adder.Sum();
+	} else {
+		ShortestDistance(result, &typed_distance, true, mydelta);
+		const auto state = result.Start();
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval = LogArc::Weight::NoWeight();
+		}
+		retval = state != kNoStateId && state < typed_distance.size() ? typed_distance[state] : Weight::Zero();
+	}
+	
+	distance = script::WeightClass(retval);
+	return distance;
+}
+
+script::WeightClass multi_score_std_impl(script::FstClass &loh, script::FstClass &wgd, script::FstClass &gl, script::FstClass &input, script::FstClass &output) {	
+	const Fst<StdArc> *lohfst = loh.GetFst<StdArc>();
+    const Fst<StdArc> *wgdfst = wgd.GetFst<StdArc>();
+    const Fst<StdArc> *glfst = gl.GetFst<StdArc>();
+	const Fst<StdArc> *ifst1 = input.GetFst<StdArc>();
+	const Fst<StdArc> *ifst2 = output.GetFst<StdArc>();
+	
+	ArcSortFst<StdArc, ILabelCompare<StdArc> > ifst_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst1, ILabelCompare<StdArc>());
+	ArcSortFst<StdArc, ILabelCompare<StdArc> > ofst_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst2, ILabelCompare<StdArc>());
+
+	// set compose options
+	ComposeFstOptions<StdArc> co;
+	//co.gc_limit=0;
+
+    ComposeFst<StdArc> result = ComposeFst<StdArc>(ComposeFst<StdArc>(ComposeFst<StdArc>(ComposeFst<StdArc>(ifst_sorted, *lohfst, co), *wgdfst, co), *glfst, co), ofst_sorted, co);
+
+	std::vector<StdArc::Weight> typed_distance;
+	StdArc::Weight retval;
+	script::WeightClass distance;
+
+	NaturalShortestFirstQueue<StdArc::StateId, StdArc::Weight> state_queue(typed_distance);
+	ShortestDistanceOptions<StdArc, NaturalShortestFirstQueue<StdArc::StateId, StdArc::Weight>, AnyArcFilter<StdArc> > opts(&state_queue, AnyArcFilter<StdArc>());
+	opts.first_path=true;
+	
+	using StateId = typename StdArc::StateId;
+	using Weight = typename StdArc::Weight;
+
+	if (Weight::Properties() & kRightSemiring) {
+		ShortestDistance(result, &typed_distance, opts);
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval =  StdArc::Weight::NoWeight();
+		}
+		Adder<Weight> adder;  // maintains cumulative sum accurately
+		for (StateId state = 0; state < typed_distance.size(); ++state) {
+			adder.Add(Times(typed_distance[state], result.Final(state)));
+		}
+		retval = adder.Sum();
+	} else {
+		ShortestDistance(result, &typed_distance, true, mydelta);
+		const auto state = result.Start();
+		if (typed_distance.size() == 1 && !typed_distance[0].Member()) {
+			retval = StdArc::Weight::NoWeight();
+		}
+		retval = state != kNoStateId && state < typed_distance.size() ? typed_distance[state] : Weight::Zero();
+	}
+	
+	distance = script::WeightClass(retval);
+	return distance;
+}
+script::WeightClass multi_kernel_score_std_impl(script::FstClass &loh, script::FstClass &wgd, script::FstClass &gain, script::FstClass &loss, script::FstClass &input, script::FstClass &output) {	
+	const Fst<StdArc> *lohfst = loh.GetFst<StdArc>();
+    const Fst<StdArc> *wgdfst = wgd.GetFst<StdArc>();
+    const Fst<StdArc> *gainfst = gain.GetFst<StdArc>();
+    const Fst<StdArc> *lossfst = loss.GetFst<StdArc>();
+	const Fst<StdArc> *ifst1 = input.GetFst<StdArc>();
+	const Fst<StdArc> *ifst2 = output.GetFst<StdArc>();
+	
+	ArcSortFst<StdArc, ILabelCompare<StdArc> > input_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst1, ILabelCompare<StdArc>());
+	ArcSortFst<StdArc, ILabelCompare<StdArc> > output_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(*ifst2, ILabelCompare<StdArc>());
+
+	// set compose options
+	ComposeFstOptions<StdArc> co;
+	//co.gc_limit=0;
+
+    InvertFst<StdArc> left = InvertFst<StdArc>(ComposeFst<StdArc>(*lohfst, ComposeFst<StdArc>(*wgdfst, ComposeFst<StdArc>(*gainfst, ComposeFst<StdArc>(*lossfst, input_sorted, co), co), co), co));
+    ComposeFst<StdArc> right = ComposeFst<StdArc>(*lohfst, ComposeFst<StdArc>(*wgdfst, ComposeFst<StdArc>(*gainfst, ComposeFst<StdArc>(*lossfst, output_sorted, co), co), co), co);
+    ArcSortFst<StdArc, ILabelCompare<StdArc> > right_sorted = ArcSortFst<StdArc, ILabelCompare<StdArc> >(right, ILabelCompare<StdArc>());
+	ComposeFst<StdArc> result = ComposeFst<StdArc>(left, right_sorted, co);
 
 	std::vector<StdArc::Weight> typed_distance;
 	StdArc::Weight retval;

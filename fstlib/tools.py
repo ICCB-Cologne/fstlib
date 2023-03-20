@@ -38,11 +38,12 @@ def paths(infst, tape='input'):
     result = list(zip(paths, scores))
     return result
 
-def strings(infst, tape='input', delimiter="", to_real=False):
+def strings(infst, delimiter="", to_real=False, tape='input'):
     """ returns all strings from a fsa """
     algo = fstlib.algos.PathDepthFirstSearch(infst)
             
-    paths=list()
+    ipaths=list()
+    opaths=list()
     scores=list()
     for path in algo.get_paths():
         if tape == 'input':
@@ -75,7 +76,7 @@ def strings(infst, tape='input', delimiter="", to_real=False):
     else:
         result = pd.DataFrame(data=list(zip(paths, scores)), columns=['string', 'weight'])
     result.sort_values('weight', inplace=True)
-    result.index=[("path%%.%dd" % digits) % i for i in range(len(paths))]
+    result.index=[("path%%.%dd" % digits) % i for i in range(len(ipaths))]
     if to_real:
         result.weight = np.exp(-result.weight)
 
