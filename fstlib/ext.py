@@ -19,6 +19,39 @@ def align(model, ifst1, ifst2):
     ofst = fstlib.cext.ops.align(model.fst, ifst1.fst, ifst2.fst)
     return fstlib.Fst(ofst)
 
+def decompose(ifsa, ofsa, event_fst, n_events, return_all=False):
+    C = [None, ] * n_events ## cliques
+
+    ## initial beliefs
+    C[0] = ifsa * event_fst
+    for i in range(1, n_events-1):
+        C[i] = event_fst
+    C[n_events-1] = event_fst * ofsa
+
+    ## messages
+    fwd = [None, ] * (n_events-1)
+    bwd = [None, ] * (n_events-1)
+
+    fwd[0] = fstlib.determinize(fstlib.project(C[0], 'output')).minimize()
+    for i in range(1, n_events-1):
+        fwd[i] = fstlib.determinize(fstlib.project(fwd[i-1] * C[i], 'output')).minimize()
+    
+    bwd[n_events-2] = fstlib.determinize(fstlib.project(C[n_events-1], 'input')).minimize()
+    for i in range(n_events-3, -1, -1):
+        bwd[i] = fstlib.determinize((C[i+1] * bwd[i+1]).project('input')).minimize()
+
+    ## final beliefs
+    B = [None, ] * n_events
+    B[0] = C[0] * bwd[0]
+    for i in range(1, n_events-1):
+        B[i] = fwd[i-1] * C[i] * bwd[i]
+    B[n_events-1] = fwd[n_events-2] * C[n_events-1]
+
+    if return_all:
+        return C, fwd, bwd, B
+    else: ## only return final beliefs
+	    return B
+
 def encode_determinize_minimize(ifst, delta=1e-6):
     em = fstlib.EncodeMapper(arc_type=ifst.arc_type(), encode_labels=True, encode_weights=False)
     ofst = ifst.copy().encode(em)
