@@ -74,7 +74,17 @@ def info(ifst, name=None):
         info['narcs'] += ifst.num_arcs(state)
         info['ninputeps'] += ifst.num_input_epsilons(state)
         info['noutputeps'] += ifst.num_output_epsilons(state)
-    
+    info['acceptor'] = ifst.properties(fstlib.FstProperties.ACCEPTOR, True) == fstlib.FstProperties.ACCEPTOR
+    info['input_deterministic'] = ifst.properties(fstlib.FstProperties.I_DETERMINISTIC, True) == fstlib.FstProperties.I_DETERMINISTIC
+    info['output_deterministic'] = ifst.properties(fstlib.FstProperties.O_DETERMINISTIC, True) == fstlib.FstProperties.O_DETERMINISTIC
+    info['input_label_sorted'] = ifst.properties(fstlib.FstProperties.I_LABEL_SORTED, True) == fstlib.FstProperties.I_LABEL_SORTED
+    info['output_label_sorted'] = ifst.properties(fstlib.FstProperties.O_LABEL_SORTED, True) == fstlib.FstProperties.O_LABEL_SORTED
+    info['cyclic'] = ifst.properties(fstlib.FstProperties.CYCLIC, True) == fstlib.FstProperties.CYCLIC
+    info['topsorted'] = ifst.properties(fstlib.FstProperties.TOP_SORTED, True) == fstlib.FstProperties.TOP_SORTED
+    info['accessible'] = ifst.properties(fstlib.FstProperties.ACCESSIBLE, True) == fstlib.FstProperties.ACCESSIBLE
+    info['coaccessible'] = ifst.properties(fstlib.FstProperties.COACCESSIBLE, True) == fstlib.FstProperties.COACCESSIBLE
+    info['weighted'] = ifst.properties(fstlib.FstProperties.WEIGHTED, True) == fstlib.FstProperties.WEIGHTED
+
     df = pd.DataFrame.from_dict(info, orient='index', columns=[name if name is not None else id(ifst)])
     return df
 
