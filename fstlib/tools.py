@@ -45,13 +45,15 @@ def strings(infst, delimiter="", to_real=False):
     ipaths=list()
     opaths=list()
     scores=list()
+
+    isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
+    osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
     for path in algo.get_paths():
-        isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
         iseq = delimiter.join([isyms[p.ilabel] if isyms is not None else str(p.ilabel) for p in path])
-        osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
         oseq = delimiter.join([osyms[p.olabel] if osyms is not None else str(p.olabel) for p in path])
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:
             score = functools.reduce(fstlib.times, [p.weight for p in path] + [path.finalWeight,])
+            #score = np.sum([float(p.weight) for p in path] + [float(path.finalWeight),])
         else:
             raise FstToolsError('semiring not implemented')
         ipaths.append(iseq)
@@ -67,14 +69,14 @@ def strings(infst, delimiter="", to_real=False):
 
     return result
 
-def mass_intersect_quick(ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True, delta_det=fstlib.DEF_DELTA, delta_min=fstlib.DEF_DELTA, return_filename=False):
+def mass_intersect_quick(ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True, delta_det=fstlib.SHORTEST_DELTA, delta_min=fstlib.SHORTEST_DELTA, return_filename=False):
     return multicommand(fstlib.core.intersect, ifsts, prune_nstate, prune_weight, prune_level, determinize=determinize, 
                             minimize=minimize,
                           rmepsilon=rmepsilon, sort='olabel', return_filename=return_filename, delta_min=delta_min, 
                           delta_det=delta_det)
 
 def multicommand(func, ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True,
-                    sort=None, repeat=1, delta_det=fstlib.DEF_DELTA, delta_min=fstlib.DEF_DELTA, return_filename=False):
+                    sort=None, repeat=1, delta_det=fstlib.SHORTEST_DELTA, delta_min=fstlib.SHORTEST_DELTA, return_filename=False):
     """ applies a function multiple times to multiple fsts or repeatedly to the same.
     Uses Cyril's "log" strategy to speed up computation. """
         

@@ -14,6 +14,11 @@ from .pywrapfst cimport *
 from .cops cimport *
 import numpy as np
 
+## additional constants
+DELTA = fst.kDelta
+SHORTEST_DELTA = fst.kShortestDelta
+
+
 def runme():
     print('This works')
 
