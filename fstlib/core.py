@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 from io import StringIO
+import collections
 
 import numpy as np
 import pandas as pd

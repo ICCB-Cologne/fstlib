@@ -9,6 +9,7 @@ FST algorithms
 import array
 import functools
 import logging
+import collections
 
 import numpy as np
 
@@ -76,7 +77,7 @@ class PosteriorDecoding(object):
             if self.ifst.is_final(state):
                 outfst.set_final(newstate, self.ifst.final(state))
             if state != newstate:
-                raise FSTError('State mapping error') 
+                raise FSTlibAlgosError('State mapping error') 
                 ## this must not happen; I'm not sure it can currently due to the way the states are handled
         initial_state = self.ifst.start()
         outfst.set_start(initial_state)
@@ -235,7 +236,7 @@ class PosteriorDecodingCountDP(AbstractCountDP):
                             value = self.posterior[pos][trans.isymbol]
                         except KeyError:
                             value = 0
-                        value += fw * numpy.exp(-trans.weight) * bw
+                        value += fw * np.exp(-trans.weight) * bw
                         self.posterior[pos][trans.isymbol] = value
 
 
@@ -298,7 +299,7 @@ class PosteriorDecodingDP(AbstractDP):
                             value = self.posterior[pos][trans.isymbol]
                         except KeyError:
                             value = 0
-                        value += fw * numpy.exp(-trans.weight) * bw
+                        value += fw * np.exp(-trans.weight) * bw
                         self.posterior[pos][trans.isymbol] = value
                         
         
@@ -335,7 +336,7 @@ class ForwardDP(AbstractDP):
                 for k in range(0, nstates):
                     transitions = self._trans_cache[k][i]
                     for t in transitions:
-                        value += self.alpha[j-1][k] * math.exp(-t)  
+                        value += self.alpha[j-1][k] * np.exp(-t)  
                 column[i] = value
                 if value > 0.0: any_weight = True
             if any_weight:
@@ -363,7 +364,7 @@ class BackwardDP(AbstractDP):
         
         ## initialize the forward matrix
         # the sequence index starts with 1, 0 means "no part of the sequence seen so far"
-        self.beta = numpy.zeros((len(self.fst.states), self.seqlen + 1))
+        self.beta = np.zeros((len(self.fst.states), self.seqlen + 1))
         
         # all final states are assigned 1
         for state in self.fst.states:
@@ -376,7 +377,7 @@ class BackwardDP(AbstractDP):
                 for k in range(0, len(self.fst.states)):
                     transitions = self._get_transitions(i, k)
                     for t in transitions:
-                        value += self.beta[k, j+1] * numpy.exp(-t)  
+                        value += self.beta[k, j+1] * np.exp(-t)  
                 self.beta[i,j] = value
         
 
@@ -393,24 +394,23 @@ def get_paths_from_fst(fst):
     path = fstlib.core.Path()
     arc_cache = {}
 
-    while state != None:
+    while state is not None:
         try:
             arcs = arc_cache[state]
         except KeyError:
             arcs = [a for a in fst.arcs(state)]
             arc_cache[state] = arcs
 
-        i = 0
         try:
             i = next_arc[state]
         except KeyError:
-            pass
+            i = 0
         
         #if self.fst.num_arcs(state) > i: ## move forward
         if len(arcs) > i: ## move forward
             arc = arcs[i]  ## get forward transition
             path.append(arc) ## save transition
-            stack.append(state) ## put state on stack
+            stack.append(state)
             next_arc[state] = i + 1 ## increase trans counter by 1
             state = arc.nextstate ## move to next state
         else: ## move back
@@ -418,7 +418,7 @@ def get_paths_from_fst(fst):
             if path.finalWeight != zero:
                 yield path.copy()
 
-            next_arc[state] = 0    
+            next_arc[state] = 0
             try:
                 state = stack.pop()
                 path.pop()
@@ -435,3 +435,6 @@ def map_log_to_real(x):
 
 def map_real_to_log(x):
     return -np.log(float(x))
+
+class FSTlibAlgosError(Exception):
+    pass
