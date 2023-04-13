@@ -11,44 +11,15 @@ logger = logging.getLogger(__name__)
 class FstToolsError(Exception):
     pass
 
-def paths(infst, tape='input'):
-    """ returns all strings from a fsa """
-    algo = fstlib.algos.PathDepthFirstSearch(infst)
-            
-    paths=list()
-    scores=list()
-    for path in algo.get_paths():
-        if tape == 'input':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            seq = [syms[p.ilabel] if syms is not None else str(p.ilabel) for p in path]
-        elif tape == 'output':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = [syms[p.olabel] if syms is not None else str(p.olabel) for p in path]
-        elif tape == 'both':
-            isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = [(isyms[p.ilabel] if isyms is not None else str(p.ilabel), 
-                    osyms[p.olabel] if osyms is not None else str(p.olabel)) for p in path]
-        else:
-            raise FstToolsError('Unknown tape parameter %s' % tape)
-        score = functools.reduce(fstlib.times, [p.weight for p in path] + [path.finalWeight,])
-        paths.append(seq)
-        scores.append(float(score))
-
-    result = list(zip(paths, scores))
-    return result
-
 def strings(infst, delimiter="", to_real=False):
     """ returns all strings from a fsa """
-    algo = fstlib.algos.PathDepthFirstSearch(infst)
-            
     ipaths=list()
     opaths=list()
     scores=list()
 
     isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
     osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-    for path in algo.get_paths():
+    for path in fstlib.algos.get_paths_from_fst(infst):
         iseq = delimiter.join([isyms[p.ilabel] if isyms is not None else str(p.ilabel) for p in path])
         oseq = delimiter.join([osyms[p.olabel] if osyms is not None else str(p.olabel) for p in path])
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:

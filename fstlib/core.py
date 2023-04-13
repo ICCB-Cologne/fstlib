@@ -210,8 +210,7 @@ class Fst:
     def paths(self):
         """ Runs a path depth first search and returns a list of paths.
         An extension to pywrapfst.Fst. """
-        pdfs = fstlib.algos.PathDepthFirstSearch(self)
-        return pdfs.get_paths()
+        return fstlib.algos.get_paths_from_fst(self)
 
     def print(self, isymbols=None, osymbols=None, ssymbols=None, acceptor=False, show_weight_one=False, missing_sym=""):
         return self.fst.print(isymbols, osymbols, ssymbols, acceptor, show_weight_one, missing_sym)

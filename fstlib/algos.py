@@ -379,163 +379,51 @@ class BackwardDP(AbstractDP):
                         value += self.beta[k, j+1] * numpy.exp(-t)  
                 self.beta[i,j] = value
         
+
+def get_paths_from_fst(fst):
+    """ generator that returns paths from a given fst """
+
+    if fst.num_states()==0:
+        return
+
+    zero = fstlib.Weight.zero(fst.weight_type())
+    state = fst.start()
+    next_arc = {}
+    stack = []
+    path = fstlib.core.Path()
+    arc_cache = {}
+
+    while state != None:
+        try:
+            arcs = arc_cache[state]
+        except KeyError:
+            arcs = [a for a in fst.arcs(state)]
+            arc_cache[state] = arcs
+
+        i = 0
+        try:
+            i = next_arc[state]
+        except KeyError:
+            pass
         
+        #if self.fst.num_arcs(state) > i: ## move forward
+        if len(arcs) > i: ## move forward
+            arc = arcs[i]  ## get forward transition
+            path.append(arc) ## save transition
+            stack.append(state) ## put state on stack
+            next_arc[state] = i + 1 ## increase trans counter by 1
+            state = arc.nextstate ## move to next state
+        else: ## move back
+            path.finalWeight = fst.final(state)
+            if path.finalWeight != zero:
+                yield path.copy()
 
-class PathDepthFirstSearch(object):
-    """ recursively walks through the FST and prints the paths.
-    Make sure the FST does not contain loops, otherwise the function will not terminate. """
-    
-    def __init__(self, fst):
-        '''
-        Constructor
-        '''
-        self.fst = fst
-        self.zero = fstlib.Weight.zero(self.fst.weight_type())
-    
-    def get_paths(self):
-        """ generator that returns paths """
-
-        if self.fst.num_states()==0:
-            return
-
-        state = self.fst.start()
-        next_arc = {}
-        stack = []
-        path = fstlib.core.Path()
-        arc_cache = {}
-
-        while state != None:
+            next_arc[state] = 0    
             try:
-                arcs = arc_cache[state]
-            except KeyError:
-                arcs = [a for a in self.fst.arcs(state)]
-                arc_cache[state] = arcs
-
-            i = 0
-            try:
-                i = next_arc[state]
-            except KeyError:
-                pass
-            
-            #if self.fst.num_arcs(state) > i: ## move forward
-            if len(arcs) > i: ## move forward
-                arc = arcs[i]  ## get forward transition
-                path.append(arc) ## save transition
-                stack.append(state) ## put state on stack
-                next_arc[state] = i + 1 ## increase trans counter by 1
-                state = arc.nextstate ## move to next state
-            else: ## move back
-                path.finalWeight = self.fst.final(state)
-                if path.finalWeight != self.zero:
-                    yield path.copy()
-
-                next_arc[state] = 0    
-                try:
-                    state = stack.pop()
-                    path.pop()
-                except IndexError:
-                    state = None
-                
-                
-                            
-class FeatureDepthFirstSearch(object):
-    """ recursively walks through the FST and prints the paths.
-    Make sure the FST does not contain loops, otherwise the function will not terminate. """
-    
-    def __init__(self, fst):
-        '''
-        Constructor
-        '''
-        self.fst = fst
-        self.paths = []
-        self.path_limit = None
-        assert(fst != None)
-    
-    def run(self):
-        """ starts the recursion """
-        self.paths = []
-
-        self._iteration()
-    
-    def _iteration(self):
-        """ interative walk through the DAG """
-        
-        state = self.fst.states[0]
-        suffix_cache = {}
-        next_trans = {}
-        stack = []
-        counter = 0
-        max_depth = 0
-        while state != None:
-            transitions_out = state.get_outgoing_transitions()
-            i = 0
-            try:
-                i = next_trans[state]
-            except KeyError:
-                pass
-            
-            if len(transitions_out) > i: ## move forward
-                max_depth += 1
-                trans = transitions_out[i]  ## get forward transition
-                stack.append(state) ## put state on stack
-                next_trans[state] = i + 1 ## increase trans counter by 1
-                state = trans.state_to ## move to next state                
-                
-            else: ## generate suffixes and jump back
-                ## do the jump back
-                #print counter
-                #counter += 1
-                
-                previous_state = None
-                try:
-                    previous_state = stack.pop()
-                except IndexError:
-                    pass
-                
-                if previous_state != None:
-                    prev_trans_id = next_trans[previous_state] - 1
-                    prev_trans = previous_state.get_outgoing_transitions()[prev_trans_id]
-                    suffixes_current = [[max_depth - 0, -1, -1]]
-                    try:
-                        suffixes_current = suffix_cache[state]
-                        #print suffixes_current
-                    except KeyError:
-                        pass
-                    #print "word: %s" % str(word)
-                    #print "concatenating..."
-                    #new_suffixes = [[word] + s for s in suffixes]
-                    #print "new suffixes:"
-                    #print [[str(t) for t in s] for s in new_suffixes]
-                        
-                    suffixes_prev = None
-                    try:
-                        suffixes_prev = suffix_cache[previous_state]
-                    except KeyError:
-                        suffixes_prev = []
-                        suffix_cache[previous_state] = suffixes_prev
-
-                    for suf in suffixes_current:
-                        new_suffix = [suf[0] - 1, suf[1], suf[2]]
-                        if prev_trans.osymbol == "X":
-                            assert( not(new_suffix[1] > -1 and new_suffix[2] > -1) )
-                            if new_suffix[2] == -1:
-                                new_suffix[2] = suf[0] - 2
-                            elif new_suffix[1] == -1:
-                                new_suffix[1] = suf[0]
-                                
-                        suffixes_prev.append(new_suffix)
-                    
-                    #print suffixes_prev
-                        
-                        #sc = sc + new_suffixes
-                        #print "sc:"
-                        #print [[str(t) for t in s] for s in sc]
-                    
-                        
-                
-                state = previous_state
-        
-        self.paths = suffix_cache[self.fst.states[0]]
+                state = stack.pop()
+                path.pop()
+            except IndexError:
+                state = None
 
 def posterior_decoding(ifst, collapse_arcs=True):
     pd = PosteriorDecoding(ifst).run()
