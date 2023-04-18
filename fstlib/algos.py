@@ -382,7 +382,8 @@ class BackwardDP(AbstractDP):
         
 
 def get_paths_from_fst(fst):
-    """ generator that returns paths from a given fst """
+    """ generator that returns paths from a given fst.
+    Doesn't work correctly if multiple final states along a single path, t.b.f. """
 
     if fst.num_states()==0:
         return

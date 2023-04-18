@@ -423,6 +423,16 @@ class FSTError(Exception):
         return str(self.message)
 
 ## function definitions
+_last_seed = None
+
+## function definitions
+def generate_seed():
+    global _last_seed
+    random_data = os.urandom(4) 
+    seed = int.from_bytes(random_data, byteorder="big") 
+    _last_seed = seed
+    return seed
+
 def arcmap(ifst, delta=fstlib.DELTA, map_type='identity', power=1.0, weight=None):
     newfst = pywrapfst.arcmap(ifst.fst, delta, map_type, power, weight)
     return Fst(newfst)
@@ -490,15 +500,15 @@ def push(ifst, delta=fstlib.DELTA, push_weights=False, push_labels=False,
     newfst = Fst(newfst)
     if remove_total_weight:
         logger.warn("'remove_total_weight' is not working in pywrapfst. Use destructive method instead. We're using a workaround here which might or might not do what you expect.")
-        for state in newfst.states():
-            if newfst.is_final(state):
-                newfst.set_final(state, fstlib.Weight.zero(newfst.weight_type()))
+        # for state in newfst.states():
+        #     if newfst.is_final(state):
+        #         newfst.set_final(state, fstlib.Weight.one(newfst.weight_type()))
     return newfst
 
-def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DELTA, select='uniform', max_length=fstlib.MAX_INT32, seed=0):
+def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DELTA, select='uniform', max_length=fstlib.MAX_INT32, seed=generate_seed()):
     return pywrapfst.randequivalent(ifst1.fst, ifst2.fst, npath, delta, select, max_length, seed)
 
-def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, weighted=False, remove_total_weight=False, seed=0):
+def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, weighted=False, remove_total_weight=False, seed=generate_seed()):
     newfst = pywrapfst.randgen(ifst.fst, npath, select, max_length, weighted, remove_total_weight, seed)
     return Fst(newfst)
 
@@ -528,3 +538,4 @@ def synchronize(ifst):
 # def times(lhs, rhs):
 #     return pywrapfst.times(lhs, rhs)
 # commented out to avoid forwarding overhead
+
