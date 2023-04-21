@@ -201,6 +201,11 @@ class Fst:
 
     def num_output_epsilons(self, state):
         return self.fst.num_output_epsilons(state)
+    
+    def num_paths(self):
+        """ Returns the number of paths of the fst via shortest distance. 
+        An extension to pywrapfst.Fst. """
+        return fstlib.algos.get_number_of_paths_from_fst(self)
 
     def num_states(self):
         return self.fst.num_states()
