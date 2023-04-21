@@ -426,6 +426,17 @@ def get_paths_from_fst(fst):
             except IndexError:
                 state = None
 
+def get_number_of_paths_from_fst(ifst):
+    """ Returns the total number of paths for a given fst. """
+    if ifst.properties(fstlib.FstProperties.CYCLIC, True) == fstlib.FstProperties.CYCLIC:
+        npaths = np.inf
+    else:
+        fsto = fstlib.arcmap(ifst, map_type='rmweight')
+        fsto = fstlib.arcmap(fsto, map_type='to_log')
+        sd = fstlib.shortestdistance(fsto, reverse=True)[0]
+        npaths = int(np.round(np.exp(-float(sd))))
+    return npaths
+
 def posterior_decoding(ifst, collapse_arcs=True):
     pd = PosteriorDecoding(ifst).run()
     conf = ConfusionNetworkFromLattice(pd).run(collapse_arcs)
