@@ -19,7 +19,7 @@ class Path(list):
         self.finalWeight = kwargs.get("finalWeight", 0)
         valid = [p in self.__attributes for p in kwargs.keys()]
         if not all(valid):
-            raise FSTError("Unknown attribute in [" + ",".join(kwargs.keys()) + "]. Allowed arguments are: [" + ",".join(self.__attributes) + "].")
+            raise FstPathsError("Unknown attribute in [" + ",".join(kwargs.keys()) + "]. Allowed arguments are: [" + ",".join(self.__attributes) + "].")
 
     def copy(self):
         newpath = fstlib.Path(self)
