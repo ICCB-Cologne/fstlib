@@ -205,7 +205,7 @@ class Fst:
     def num_paths(self):
         """ Returns the number of paths of the fst via shortest distance. 
         An extension to pywrapfst.Fst. """
-        return fstlib.algos.get_number_of_paths_from_fst(self)
+        return fstlib.paths.get_number_of_paths_from_fst(self)
 
     def num_states(self):
         return self.fst.num_states()
@@ -216,7 +216,7 @@ class Fst:
     def paths(self):
         """ Runs a path depth first search and returns a list of paths.
         An extension to pywrapfst.Fst. """
-        return fstlib.algos.get_paths_from_fst(self)
+        return fstlib.paths.get_paths_from_fst(self)
 
     def print(self, isymbols=None, osymbols=None, ssymbols=None, acceptor=False, show_weight_one=False, missing_sym=""):
         return self.fst.print(isymbols, osymbols, ssymbols, acceptor, show_weight_one, missing_sym)
@@ -342,7 +342,7 @@ class Fst:
     def to_real(self):
         """ Shortcut for a constructive weight map from log to real, mainly
         for plotting and printing purposes. An extension to pywrapfst.Fst."""
-        return fstlib.weight_map(self, fstlib.algos.map_log_to_real)
+        return fstlib.weight_map(self, fstlib.tools.neglog_to_real)
 
     def to_svg(self, **kwargs):
         g = self.to_graphviz(**kwargs)
@@ -403,22 +403,6 @@ class Fst:
 
     def __setstate__(self, state):
         self.fst = pywrapfst.Fst.read_from_string(state)
-
-class Path(list):
-    """ simple extension of list class that includes a final weight """
-    __attributes = ["finalWeight"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args)
-        self.finalWeight = kwargs.get("finalWeight", 0)
-        valid = [p in self.__attributes for p in kwargs.keys()]
-        if not all(valid):
-            raise FSTError("Unknown attribute in [" + ",".join(kwargs.keys()) + "]. Allowed arguments are: [" + ",".join(self.__attributes) + "].")
-
-    def copy(self):
-        newpath = fstlib.Path(self)
-        newpath.finalWeight = self.finalWeight
-        return newpath
 
 class FSTError(Exception):
     def __init__(self, message="<unknown error>"):

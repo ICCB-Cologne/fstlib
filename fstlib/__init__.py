@@ -18,6 +18,7 @@ MAX_INT32 = 2**31 - 1
 from fstlib.cext.pywrapfst import *
 from fstlib.cext.ops import DELTA, SHORTEST_DELTA
 from fstlib.core import *
+from fstlib.paths import *
 from fstlib.ext import *
 import fstlib.algos
 import fstlib.factory

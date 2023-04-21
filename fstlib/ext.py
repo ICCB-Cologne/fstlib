@@ -158,7 +158,7 @@ def normalize_alphabet(ifst, inplace=False):
     return ofst
 
 def project(ifst, project_type='input'):
-    """ Provides a non-destructive push operation, which pywrapfst doesn't have. """
+    """ Provides a non-destructive project operation, which pywrapfst doesn't have. """
     ofst = ifst.copy()
     ofst.project(project_type)
     return ofst

@@ -5,6 +5,7 @@ import logging
 import fstlib
 import fstlib.core
 import fstlib.algos
+import fstlib.paths
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ def strings(infst, delimiter="", to_real=False):
 
     isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
     osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-    for path in fstlib.algos.get_paths_from_fst(infst):
+    for path in fstlib.paths.get_paths_from_fst(infst):
         iseq = delimiter.join([isyms[p.ilabel] if isyms is not None else str(p.ilabel) for p in path])
         oseq = delimiter.join([osyms[p.olabel] if osyms is not None else str(p.olabel) for p in path])
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:
@@ -142,4 +143,9 @@ def strings_to_count_matrix(list_of_strings, symbols=None):
     return count_matrix, symbols
 
 
+def neglog_to_real(x):
+    return np.exp(-float(x))
+
+def real_to_neglog(x):
+    return -np.log(float(x))
 
