@@ -494,10 +494,14 @@ def push(ifst, delta=fstlib.DELTA, push_weights=False, push_labels=False,
         #         newfst.set_final(state, fstlib.Weight.one(newfst.weight_type()))
     return newfst
 
-def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DELTA, select='uniform', max_length=fstlib.MAX_INT32, seed=generate_seed()):
+def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DELTA, select='uniform', max_length=fstlib.MAX_INT32, seed=None):
+    if seed is None:
+        seed = generate_seed()
     return pywrapfst.randequivalent(ifst1.fst, ifst2.fst, npath, delta, select, max_length, seed)
 
-def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, weighted=False, remove_total_weight=False, seed=generate_seed()):
+def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, weighted=False, remove_total_weight=False, seed=None):
+    if seed is None:
+        seed = generate_seed()
     newfst = pywrapfst.randgen(ifst.fst, npath, select, max_length, weighted, remove_total_weight, seed)
     return Fst(newfst)
 

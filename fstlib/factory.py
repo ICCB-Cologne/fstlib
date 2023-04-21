@@ -232,7 +232,7 @@ def from_count_matrix(count_matrix, symbol_table, keys=None, arc_type = 'log', n
         
     return myfst
 
-def create_lattice(symbol_table, length, epsilons=False, arc_type='standard'):
+def create_fixed_length_fsa_from_symbol_table(symbol_table, length, epsilons=False, arc_type='standard'):
     n = length+1
     fst = fstlib.Fst(arc_type=arc_type)
     fst.add_states(n)
@@ -248,24 +248,6 @@ def create_lattice(symbol_table, length, epsilons=False, arc_type='standard'):
 
     return fst
 
-def _hexdist(x, y):
-    return abs(int(x, 16) - int(y, 16))
-
-def _hexdist_signed(x, y):
-    return int(x, 16) - int(y, 16)
-    
-def _hex_is_double(x, y):
-    if x=="0" or y=="0": return(False)
-    return (int(x, 16) / float(int(y, 16)) == 2)
-
-def _hex_is_half(x, y):
-    if x=="0" or y=="0": return(False)
-    return (int(x, 16) / float(int(y, 16)) == 0.5)
-
-def _hex_division(x, y):
-    if x=="0" or y=="0": return(False)
-    return (int(x, 16) / float(int(y, 16)))
-    
 class FSTFactoryError(Exception):
     def __init__(self, msg):
         self.message = msg

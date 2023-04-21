@@ -26,15 +26,15 @@ class Path(list):
         newpath.finalWeight = self.finalWeight
         return newpath
 
-def get_paths_from_fst(fst):
+def get_paths_from_fst(ifst):
     """ generator that returns paths from a given fst.
     Doesn't work correctly if multiple final states along a single path, t.b.f. """
 
-    if fst.num_states()==0:
+    if ifst.num_states()==0:
         return
 
-    zero = fstlib.Weight.zero(fst.weight_type())
-    state = fst.start()
+    zero = fstlib.Weight.zero(ifst.weight_type())
+    state = ifst.start()
     next_arc = {}
     stack = []
     path = Path()
@@ -44,7 +44,7 @@ def get_paths_from_fst(fst):
         try:
             arcs = arc_cache[state]
         except KeyError:
-            arcs = [a for a in fst.arcs(state)]
+            arcs = [a for a in ifst.arcs(state)]
             arc_cache[state] = arcs
 
         try:
@@ -60,7 +60,7 @@ def get_paths_from_fst(fst):
             next_arc[state] = i + 1 ## increase trans counter by 1
             state = arc.nextstate ## move to next state
         else: ## move back
-            path.finalWeight = fst.final(state)
+            path.finalWeight = ifst.final(state)
             if path.finalWeight != zero:
                 yield path.copy()
 
