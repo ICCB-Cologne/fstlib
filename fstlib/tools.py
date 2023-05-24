@@ -38,28 +38,27 @@ def paths(infst, tape='input'):
     result = list(zip(paths, scores))
     return result
 
-def strings(infst, delimiter="", to_real=False, tape='input'):
+def strings(infst, tape='input', delimiter="", to_real=False):
     """ returns all strings from a fsa """
     algo = fstlib.algos.PathDepthFirstSearch(infst)
             
-    ipaths=list()
-    opaths=list()
+    cur_paths=list()
     scores=list()
     for path in algo.get_paths():
         if tape == 'input':
             syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
             seq = delimiter.join([syms[p.ilabel] if syms is not None else str(p.ilabel) for p in path])
-            paths.append(seq)
+            cur_paths.append(seq)
         elif tape == 'output':
             syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
             seq = delimiter.join([syms[p.olabel] if syms is not None else str(p.olabel) for p in path])
-            paths.append(seq)
+            cur_paths.append(seq)
         elif tape == 'both':
             syms_in = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
             seq_in = delimiter.join([syms_in[p.ilabel] if syms_in is not None else str(p.ilabel) for p in path])
             syms_out = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
             seq_out = delimiter.join([syms_out[p.olabel] if syms_out is not None else str(p.olabel) for p in path])
-            paths.append((seq_in, seq_out))
+            cur_paths.append((seq_in, seq_out))
         else:
             raise FstToolsError('Unknown tape parameter %s' % tape)
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:
@@ -67,20 +66,21 @@ def strings(infst, delimiter="", to_real=False, tape='input'):
         else:
             raise FstToolsError('semiring not implemented')
         scores.append(float(score))
-    if len(paths)==0:
-        paths.append('[no path]')
+    if len(cur_paths)==0:
+        cur_paths.append('[no path]')
         scores.append(np.inf)
-    digits = int(np.log10(len(paths)))+1
+    digits = int(np.log10(len(cur_paths)))+1
     if tape == 'both':
-        result = pd.DataFrame(data={'input': [p[0] for p in paths], 'output': [p[1] for p in paths], 'weight': scores})
+        result = pd.DataFrame(data={'input': [p[0] for p in cur_paths], 'output': [p[1] for p in cur_paths], 'weight': scores})
     else:
-        result = pd.DataFrame(data=list(zip(paths, scores)), columns=['string', 'weight'])
+        result = pd.DataFrame(data=list(zip(cur_paths, scores)), columns=['string', 'weight'])
     result.sort_values('weight', inplace=True)
-    result.index=[("path%%.%dd" % digits) % i for i in range(len(ipaths))]
+    result.index=[("path%%.%dd" % digits) % i for i in range(len(cur_paths))]
     if to_real:
         result.weight = np.exp(-result.weight)
 
     return result
+
 
 def mass_intersect_quick(ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True, delta_det=fstlib.DEF_DELTA, delta_min=fstlib.DEF_DELTA, return_filename=False):
     return multicommand(fstlib.core.intersect, ifsts, prune_nstate, prune_weight, prune_level, determinize=determinize, 
