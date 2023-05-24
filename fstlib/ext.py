@@ -142,7 +142,7 @@ def normalize_alphabet(ifst, inplace=False):
     else:
         ofst = ifst.copy()
         
-    ofst.weight_map(fstlib.algos.map_log_to_real)
+    ofst.weight_map(fstlib.tools.neglog_to_real)
 
     for state in ofst.states():
         arcweights = [(arc.ilabel, float(arc.weight)) for arc in ofst.arcs(state)]
@@ -154,7 +154,7 @@ def normalize_alphabet(ifst, inplace=False):
             mai.set_value(arc)
 
     ## convert back
-    ofst.weight_map(fstlib.algos.map_real_to_log)
+    ofst.weight_map(fstlib.tools.real_to_neglog)
     return ofst
 
 def project(ifst, project_type='input'):
