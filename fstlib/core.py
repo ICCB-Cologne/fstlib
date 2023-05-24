@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 from io import StringIO
+import collections
 
 import numpy as np
 import pandas as pd
@@ -60,7 +61,8 @@ class Fst:
         return self.copy().invert()
 
     def add_arc(self, state, arc):
-        """ Arc can be pywrapfst.Arc or 4-tuple (ilabel, olabel, weight, nextstate) """
+        """ Arc can be pywrapfst.Arc or 4-tuple (ilabel, olabel, weight, nextstate).
+         An extended version of pywrapfst.MutableFst.add_arc() that can handle tuples as input."""
         if isinstance(arc, pywrapfst.Arc):
             pass
         else: ## assume tuple / unpackable
@@ -95,6 +97,8 @@ class Fst:
         return self
 
     def add_arcs(self, state, iterable_of_arcs):
+        """ Add an iterable of arcs or 4-tuples to a state.
+        An extension to pywrapfst.MutableFst."""
         for arc in iterable_of_arcs:
             self.add_arc(state, arc)
         return self
@@ -112,13 +116,13 @@ class Fst:
 
     def arcs(self, state):
         return self.fst.arcs(state)
-
+    
     def arcsort(self, sort_type='ilabel'):
         self.fst.arcsort(sort_type)
         return self
 
-    def closure(self, closure_plus = False):
-        self.fst.closure(closure_plus)
+    def closure(self, closure_type = "star"):
+        self.fst.closure(closure_type)
         return self
 
     def concat(self, ifst):
@@ -133,8 +137,8 @@ class Fst:
         newfst = self.fst.copy()
         return fstlib.core.Fst(newfst)
 
-    def decode(self, encoder):
-        self.fst.decode(encoder)
+    def decode(self, mapper):
+        self.fst.decode(mapper)
         return self
 
     def delete_arcs(self, state, n=0):
@@ -152,8 +156,8 @@ class Fst:
         self.fst.draw(filename, isymbols, osymbols, ssymbols, acceptor, title, width, height, portrait, 
                 vertical, ranksep, nodesep, fontsize, precision, float_format, show_weight_one)
 
-    def encode(self, encoder):
-        self.fst.encode(encoder)
+    def encode(self, mapper):
+        self.fst.encode(mapper)
         return self
 
     def final(self, state):
@@ -176,7 +180,7 @@ class Fst:
     def is_final(self, state):
         return self.final(state) != pywrapfst.Weight.zero(self.weight_type())
 
-    def minimize(self, delta=1e-6, allow_nondet=False):
+    def minimize(self, delta=fstlib.SHORTEST_DELTA, allow_nondet=False):
         self.fst.minimize(delta, allow_nondet)
         return self
 
@@ -197,6 +201,11 @@ class Fst:
 
     def num_output_epsilons(self, state):
         return self.fst.num_output_epsilons(state)
+    
+    def num_paths(self):
+        """ Returns the number of paths of the fst via shortest distance. 
+        An extension to pywrapfst.Fst. """
+        return fstlib.paths.get_number_of_paths_from_fst(self)
 
     def num_states(self):
         return self.fst.num_states()
@@ -205,21 +214,25 @@ class Fst:
         return self.fst.output_symbols()
 
     def paths(self):
-        pdfs = fstlib.algos.PathDepthFirstSearch(self)
-        return pdfs.get_paths()
+        """ Runs a path depth first search and returns a list of paths.
+        An extension to pywrapfst.Fst. """
+        return fstlib.paths.get_paths_from_fst(self)
 
-    def project(self, project_type='input'):
+    def print(self, isymbols=None, osymbols=None, ssymbols=None, acceptor=False, show_weight_one=False, missing_sym=""):
+        return self.fst.print(isymbols, osymbols, ssymbols, acceptor, show_weight_one, missing_sym)
+
+    def project(self, project_type):
         self.fst.project(project_type)
         return self
 
     def properties(self, mask, test):
         return self.fst.properties(mask,test)
 
-    def prune(self, delta=fstlib.DEF_DELTA, nstate=fstlib.NO_STATE_ID, weight=None):
+    def prune(self, delta=fstlib.DELTA, nstate=fstlib.NO_STATE_ID, weight=None):
         self.fst.prune(delta, nstate, weight)
         return self
 
-    def push(self, delta=fstlib.DEF_DELTA, remove_total_weight=False, reweight_type="to_initial"):
+    def push(self, delta=fstlib.SHORTEST_DELTA, remove_total_weight=False, reweight_type="to_initial"):
         self.fst.push(delta, remove_total_weight, reweight_type)
         return self
 
@@ -239,15 +252,15 @@ class Fst:
     def reserve_states(self, n):
         return self.fst.reserve_states(n)
 
-    def reweight(self, potentials, to_final=False):
-        self.fst.reweight(potentials, to_final)
+    def reweight(self, potentials, reweight_type="to_initial"):
+        self.fst.reweight(potentials, reweight_type)
         return self
 
-    def rmepsilon(self, queue_type='auto', connect=True, weight=None, nstate=fstlib.NO_STATE_ID, delta=1e-6):
+    def rmepsilon(self, queue_type='auto', connect=True, weight=None, nstate=fstlib.NO_STATE_ID, delta=fstlib.SHORTEST_DELTA):
         self.fst.rmepsilon(queue_type, connect, weight, nstate, delta)
         return self
 
-    def set_final(self, state, weight):
+    def set_final(self, state, weight=None):
         self.fst.set_final(state, weight)
         return self
 
@@ -272,10 +285,9 @@ class Fst:
     def states(self):
         return self.fst.states()
 
-    def text(self):
-        return self.fst.text()
-
     def to_dataframe(self, select='arcs', to_real=False):
+        """ Converts an FST to a pandas DataFrame.
+        An extension to pywrapfst.Fst. """
         if self.input_symbols() is not None:
             isyms = dict([(i, s) for i,s in self.input_symbols()])
         else:
@@ -329,8 +341,8 @@ class Fst:
 
     def to_real(self):
         """ Shortcut for a constructive weight map from log to real, mainly
-        for plotting and printing purposes. """
-        return fstlib.weight_map(self, fstlib.algos.map_log_to_real)
+        for plotting and printing purposes. An extension to pywrapfst.Fst."""
+        return fstlib.weight_map(self, fstlib.tools.neglog_to_real)
 
     def to_svg(self, **kwargs):
         g = self.to_graphviz(**kwargs)
@@ -354,7 +366,8 @@ class Fst:
         return self.fst.verify()
 
     def weight_map(self, func, with_final_states=True):
-        ## maps each arc and final state weight to a new value using the function provided """
+        """ Maps each arc and final state weight to a new value using the function provided.
+         This is an extension to the pywrapfst Fst class. """
         for state in self.states():
             final_weight = self.final(state)
             if final_weight != pywrapfst.Weight.zero(self.weight_type()) and with_final_states: ## final state
@@ -391,22 +404,6 @@ class Fst:
     def __setstate__(self, state):
         self.fst = pywrapfst.Fst.read_from_string(state)
 
-class Path(list):
-    """ simple extension of list class that includes a final weight """
-    __attributes = ["finalWeight"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args)
-        self.finalWeight = kwargs.get("finalWeight", 0)
-        valid = [p in self.__attributes for p in kwargs.keys()]
-        if not all(valid):
-            raise FSTError("Unknown attribute in [" + ",".join(kwargs.keys()) + "]. Allowed arguments are: [" + ",".join(self.__attributes) + "].")
-
-    def copy(self):
-        newpath = fstlib.Path(self)
-        newpath.finalWeight = self.finalWeight
-        return newpath
-
 class FSTError(Exception):
     def __init__(self, message="<unknown error>"):
         self.message = message
@@ -414,18 +411,18 @@ class FSTError(Exception):
     def __str__(self):
         return str(self.message)
 
-## module scope variables
+## function definitions
 _last_seed = None
 
 ## function definitions
-def _generate_seed():
+def generate_seed():
     global _last_seed
     random_data = os.urandom(4) 
     seed = int.from_bytes(random_data, byteorder="big") 
     _last_seed = seed
     return seed
 
-def arcmap(ifst, delta=fstlib.DEF_DELTA, map_type='identity', power=1.0, weight=None):
+def arcmap(ifst, delta=fstlib.DELTA, map_type='identity', power=1.0, weight=None):
     newfst = pywrapfst.arcmap(ifst.fst, delta, map_type, power, weight)
     return Fst(newfst)
 
@@ -436,11 +433,11 @@ def compose(ifst1, ifst2, compose_filter='auto', connect=True):
     newfst = pywrapfst.compose(ifst1.fst, ifst2.fst, compose_filter, connect)
     return Fst(newfst)
 
-def convert(ifst, fst_type=None):
+def convert(ifst, fst_type=""):
     newfst = pywrapfst.convert(ifst.fst, fst_type)
     return Fst(newfst)
 
-def determinize(ifst, delta=1e-6, det_type='functional', nstate=fstlib.NO_STATE_ID, 
+def determinize(ifst, delta=fstlib.SHORTEST_DELTA, det_type='functional', nstate=fstlib.NO_STATE_ID, 
                 subsequential_label=0, weight=None, incremental_subsequential_label=False):
     newfst = pywrapfst.determinize(ifst.fst, delta, det_type, nstate, subsequential_label, weight, incremental_subsequential_label)
     return Fst(newfst)
@@ -449,81 +446,77 @@ def difference(ifst1, ifst2, compose_filter='auto', connect=True):
     newfst = pywrapfst.difference(ifst1.fst, ifst2.fst, compose_filter, connect)
     return Fst(newfst)
 
-def disambiguate(ifst, delta=fstlib.DEF_DELTA, nstate=fstlib.NO_STATE_ID, subsequential_label=0, weight=None):
+def disambiguate(ifst, delta=fstlib.DELTA, nstate=fstlib.NO_STATE_ID, subsequential_label=0, weight=None):
     newfst = pywrapfst.disambiguate(ifst.fst, delta, nstate, subsequential_label, weight)
     return Fst(newfst)
 
-def divide(lhs, rhs):
-    return pywrapfst.divide(lhs, rhs)
+# def divide(lhs, rhs):
+#     return pywrapfst.divide(lhs, rhs)
+# commented out to avoid forwarding overhead
 
-
-def epsnormalize(ifst, eps_norm_output=False):
-    newfst = pywrapfst.epsnormalize(ifst.fst, eps_norm_output)
+def epsnormalize(ifst, eps_norm_type="input"):
+    newfst = pywrapfst.epsnormalize(ifst.fst, eps_norm_type)
     return Fst(newfst)
 
-def equal(ifst1, ifst2, delta=fstlib.DEF_DELTA):
+def equal(ifst1, ifst2, delta=fstlib.DELTA):
     return pywrapfst.equal(ifst1.fst, ifst2.fst, delta)
 
-def equivalent(ifst1, ifst2, delta=fstlib.DEF_DELTA):
+def equivalent(ifst1, ifst2, delta=fstlib.DELTA):
     return pywrapfst.equivalent(ifst1.fst, ifst2.fst, delta)
 
 def intersect(ifst1, ifst2, compose_filter='auto', connect=True):
     newfst = pywrapfst.intersect(ifst1.fst, ifst2.fst, compose_filter, connect)
     return Fst(newfst)
 
-def isomorphic(ifst1, ifst2, delta=fstlib.DEF_DELTA):
+def isomorphic(ifst1, ifst2, delta=fstlib.DELTA):
     return pywrapfst.isomorphic(ifst1.fst, ifst2.fst, delta)
 
-def plus(lhs, rhs):
-    return pywrapfst.plus(lhs, rhs)
+# def plus(lhs, rhs):
+#     return pywrapfst.plus(lhs, rhs)
+# commented out to avoid forwarding overhead
 
-def power(lhs, rhs):
-    return pywrapfst.power(lhs, rhs)
+# def power(lhs, rhs):
+#     return pywrapfst.power(lhs, rhs)
+# commented out to avoid forwarding overhead
 
-def prune(ifst, delta=fstlib.DEF_DELTA, nstate=fstlib.NO_STATE_ID, weight=None):
+def prune(ifst, delta=fstlib.DELTA, nstate=fstlib.NO_STATE_ID, weight=None):
     newfst = pywrapfst.prune(ifst.fst, delta, nstate, weight)
     return Fst(newfst)
 
-def push(ifst, delta=fstlib.DEF_DELTA, push_weights=False, push_labels=False, 
+def push(ifst, delta=fstlib.DELTA, push_weights=False, push_labels=False, 
          remove_common_affix=False, remove_total_weight=False, reweight_type="to_initial"):
     newfst = pywrapfst.push(ifst.fst, delta, push_weights, push_labels, remove_common_affix, remove_total_weight, reweight_type)
     newfst = Fst(newfst)
     if remove_total_weight:
         logger.warn("'remove_total_weight' is not working in pywrapfst. Use destructive method instead. We're using a workaround here which might or might not do what you expect.")
-        for state in newfst.states():
-            if newfst.is_final(state):
-                newfst.set_final(state, fstlib.Weight.zero(newfst.weight_type()))
+        # for state in newfst.states():
+        #     if newfst.is_final(state):
+        #         newfst.set_final(state, fstlib.Weight.one(newfst.weight_type()))
     return newfst
 
-def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DEF_DELTA, seed='auto', select='uniform', max_length=fstlib.MAX_INT32):
-    if seed == 'auto':
-        seed = _generate_seed()
-    else:
-        seed = int(seed)
+def randequivalent(ifst1, ifst2, npath=1, delta=fstlib.DELTA, select='uniform', max_length=fstlib.MAX_INT32, seed=None):
+    if seed is None:
+        seed = generate_seed()
     return pywrapfst.randequivalent(ifst1.fst, ifst2.fst, npath, delta, select, max_length, seed)
 
-def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, remove_total_weight=False, weighted=False, seed='auto', verbose=False):
-    if seed == 'auto':
-        seed = _generate_seed()
-        if verbose:
-            logging.info('Seed = %d' % int(seed))
-    else:
-        seed = int(seed)
-    newfst = pywrapfst.randgen(ifst.fst, npath, select, max_length, remove_total_weight, weighted, seed)
+def randgen(ifst, npath=1, select='uniform', max_length=fstlib.MAX_INT32, weighted=False, remove_total_weight=False, seed=None):
+    if seed is None:
+        seed = generate_seed()
+    newfst = pywrapfst.randgen(ifst.fst, npath, select, max_length, weighted, remove_total_weight, seed)
     return Fst(newfst)
 
 def replace(pairs, call_arc_labeling='input',  return_arc_labeling='neither', 
             epsilon_on_replace=False, return_label=0):
     return pywrapfst.replace(pairs, call_arc_labeling, return_arc_labeling, epsilon_on_replace, return_label)
 
-def reverse(ifst, require_superinitial=False):
+def reverse(ifst, require_superinitial=True):
     newfst = pywrapfst.reverse(ifst.fst, require_superinitial)
     return Fst(newfst)
 
-def shortestdistance(fst, delta=1e-6, nstate=fstlib.NO_STATE_ID, queue_type='auto', reverse=False):
+def shortestdistance(fst, delta=fstlib.SHORTEST_DELTA, nstate=fstlib.NO_STATE_ID, queue_type='auto', reverse=False):
     return pywrapfst.shortestdistance(fst.fst, delta, nstate, queue_type, reverse)
 
-def shortestpath(fst, delta=1e-6, nshortest=1, nstate=fstlib.NO_STATE_ID, queue_type='auto', unique=False, weight=None):
+def shortestpath(fst, delta=fstlib.SHORTEST_DELTA, nshortest=1, nstate=fstlib.NO_STATE_ID, queue_type='auto', unique=False, weight=None):
     newfst = pywrapfst.shortestpath(fst.fst, delta, nshortest, nstate, queue_type, unique, weight)
     return Fst(newfst)
 
@@ -535,7 +528,6 @@ def synchronize(ifst):
     newfst = pywrapfst.synchronize(ifst.fst)
     return Fst(newfst)
 
-def times(lhs, rhs):
-    return pywrapfst.times(lhs, rhs)
-
-
+# def times(lhs, rhs):
+#     return pywrapfst.times(lhs, rhs)
+# commented out to avoid forwarding overhead

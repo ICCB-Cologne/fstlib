@@ -19,6 +19,39 @@ def align(model, ifst1, ifst2):
     ofst = fstlib.cext.ops.align(model.fst, ifst1.fst, ifst2.fst)
     return fstlib.Fst(ofst)
 
+def decompose(ifsa, ofsa, event_fst, n_events, return_all=False):
+    C = [None, ] * n_events ## cliques
+
+    ## initial beliefs
+    C[0] = ifsa * event_fst
+    for i in range(1, n_events-1):
+        C[i] = event_fst
+    C[n_events-1] = event_fst * ofsa
+
+    ## messages
+    fwd = [None, ] * (n_events-1)
+    bwd = [None, ] * (n_events-1)
+
+    fwd[0] = fstlib.determinize(fstlib.project(C[0], 'output')).minimize()
+    for i in range(1, n_events-1):
+        fwd[i] = fstlib.determinize(fstlib.project(fwd[i-1] * C[i], 'output')).minimize()
+    
+    bwd[n_events-2] = fstlib.determinize(fstlib.project(C[n_events-1], 'input')).minimize()
+    for i in range(n_events-3, -1, -1):
+        bwd[i] = fstlib.determinize((C[i+1] * bwd[i+1]).project('input')).minimize()
+
+    ## final beliefs
+    B = [None, ] * n_events
+    B[0] = C[0] * bwd[0]
+    for i in range(1, n_events-1):
+        B[i] = fwd[i-1] * C[i] * bwd[i]
+    B[n_events-1] = fwd[n_events-2] * C[n_events-1]
+
+    if return_all:
+        return C, fwd, bwd, B
+    else: ## only return final beliefs
+	    return B
+
 def encode_determinize_minimize(ifst, delta=1e-6):
     em = fstlib.EncodeMapper(arc_type=ifst.arc_type(), encode_labels=True, encode_weights=False)
     ofst = ifst.copy().encode(em)
@@ -41,7 +74,17 @@ def info(ifst, name=None):
         info['narcs'] += ifst.num_arcs(state)
         info['ninputeps'] += ifst.num_input_epsilons(state)
         info['noutputeps'] += ifst.num_output_epsilons(state)
-    
+    info['acceptor'] = ifst.properties(fstlib.FstProperties.ACCEPTOR, True) == fstlib.FstProperties.ACCEPTOR
+    info['input_deterministic'] = ifst.properties(fstlib.FstProperties.I_DETERMINISTIC, True) == fstlib.FstProperties.I_DETERMINISTIC
+    info['output_deterministic'] = ifst.properties(fstlib.FstProperties.O_DETERMINISTIC, True) == fstlib.FstProperties.O_DETERMINISTIC
+    info['input_label_sorted'] = ifst.properties(fstlib.FstProperties.I_LABEL_SORTED, True) == fstlib.FstProperties.I_LABEL_SORTED
+    info['output_label_sorted'] = ifst.properties(fstlib.FstProperties.O_LABEL_SORTED, True) == fstlib.FstProperties.O_LABEL_SORTED
+    info['cyclic'] = ifst.properties(fstlib.FstProperties.CYCLIC, True) == fstlib.FstProperties.CYCLIC
+    info['topsorted'] = ifst.properties(fstlib.FstProperties.TOP_SORTED, True) == fstlib.FstProperties.TOP_SORTED
+    info['accessible'] = ifst.properties(fstlib.FstProperties.ACCESSIBLE, True) == fstlib.FstProperties.ACCESSIBLE
+    info['coaccessible'] = ifst.properties(fstlib.FstProperties.COACCESSIBLE, True) == fstlib.FstProperties.COACCESSIBLE
+    info['weighted'] = ifst.properties(fstlib.FstProperties.WEIGHTED, True) == fstlib.FstProperties.WEIGHTED
+
     df = pd.DataFrame.from_dict(info, orient='index', columns=[name if name is not None else id(ifst)])
     return df
 
@@ -68,6 +111,28 @@ def multi_kernel_score(fst1, fst2, fst3, fst4, ifst1, ifst2):
         raise FSTlibExtError('Multi kernel score not implemented for %s semiring' % fst1.arc_type())
     return distance
 
+def normalize(ifst, inplace=False):
+    """Normalizes fst so that all outgoing transitions sum to 1."""
+    
+    ## convert to real if necessary
+    if inplace:
+        ofst = ifst
+    else:
+        ofst = ifst.copy()
+        
+    ofst.weight_map(fstlib.algos.map_log_to_real)
+
+    for state in ofst.states():
+        total_arcweights = np.sum([float(arc.weight) for arc in ofst.arcs(state)])
+        mai = ofst.mutable_arcs(state)
+        for arc in mai:
+            arc.weight = fstlib.Weight(ofst.weight_type(), float(arc.weight) / total_arcweights)
+            mai.set_value(arc)
+
+    ## convert back
+    ofst.weight_map(fstlib.algos.map_real_to_log)
+    return ofst
+
 def normalize_alphabet(ifst, inplace=False):
     """Normalizes fst so that outgoing transition weights of the same input symbol sum to 1"""
     
@@ -77,7 +142,7 @@ def normalize_alphabet(ifst, inplace=False):
     else:
         ofst = ifst.copy()
         
-    ofst.weight_map(fstlib.algos.map_log_to_real)
+    ofst.weight_map(fstlib.tools.neglog_to_real)
 
     for state in ofst.states():
         arcweights = [(arc.ilabel, float(arc.weight)) for arc in ofst.arcs(state)]
@@ -89,7 +154,13 @@ def normalize_alphabet(ifst, inplace=False):
             mai.set_value(arc)
 
     ## convert back
-    ofst.weight_map(fstlib.algos.map_real_to_log)
+    ofst.weight_map(fstlib.tools.real_to_neglog)
+    return ofst
+
+def project(ifst, project_type='input'):
+    """ Provides a non-destructive project operation, which pywrapfst doesn't have. """
+    ofst = ifst.copy()
+    ofst.project(project_type)
     return ofst
 
 def read(source):

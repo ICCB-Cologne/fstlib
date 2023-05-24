@@ -5,91 +5,50 @@ import logging
 import fstlib
 import fstlib.core
 import fstlib.algos
+import fstlib.paths
 
 logger = logging.getLogger(__name__)
 
 class FstToolsError(Exception):
     pass
 
-def paths(infst, tape='input'):
+def strings(infst, delimiter="", to_real=False):
     """ returns all strings from a fsa """
-    algo = fstlib.algos.PathDepthFirstSearch(infst)
-            
-    paths=list()
+    ipaths=list()
+    opaths=list()
     scores=list()
-    for path in algo.get_paths():
-        if tape == 'input':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            seq = [syms[p.ilabel] if syms is not None else str(p.ilabel) for p in path]
-        elif tape == 'output':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = [syms[p.olabel] if syms is not None else str(p.olabel) for p in path]
-        elif tape == 'both':
-            isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = [(isyms[p.ilabel] if isyms is not None else str(p.ilabel), 
-                    osyms[p.olabel] if osyms is not None else str(p.olabel)) for p in path]
-        else:
-            raise FstToolsError('Unknown tape parameter %s' % tape)
-        score = functools.reduce(fstlib.times, [p.weight for p in path] + [path.finalWeight,])
-        paths.append(seq)
-        scores.append(float(score))
 
-    result = list(zip(paths, scores))
-    return result
-
-def strings(infst, tape='input', delimiter="", to_real=False):
-    """ returns all strings from a fsa """
-    algo = fstlib.algos.PathDepthFirstSearch(infst)
-            
-    cur_paths=list()
-    scores=list()
-    for path in algo.get_paths():
-        if tape == 'input':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            seq = delimiter.join([syms[p.ilabel] if syms is not None else str(p.ilabel) for p in path])
-            cur_paths.append(seq)
-        elif tape == 'output':
-            syms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq = delimiter.join([syms[p.olabel] if syms is not None else str(p.olabel) for p in path])
-            cur_paths.append(seq)
-        elif tape == 'both':
-            syms_in = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
-            seq_in = delimiter.join([syms_in[p.ilabel] if syms_in is not None else str(p.ilabel) for p in path])
-            syms_out = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
-            seq_out = delimiter.join([syms_out[p.olabel] if syms_out is not None else str(p.olabel) for p in path])
-            cur_paths.append((seq_in, seq_out))
-        else:
-            raise FstToolsError('Unknown tape parameter %s' % tape)
+    isyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.input_symbols()])
+    osyms = dict([(i,s if isinstance(s, str) else str(s, 'utf-8')) for i,s in infst.output_symbols()])
+    for path in fstlib.paths.get_paths_from_fst(infst):
+        iseq = delimiter.join([isyms[p.ilabel] if isyms is not None else str(p.ilabel) for p in path])
+        oseq = delimiter.join([osyms[p.olabel] if osyms is not None else str(p.olabel) for p in path])
         if infst.arc_type() == fstlib.Semiring.LOG or infst.arc_type() == fstlib.Semiring.TROPICAL:
             score = functools.reduce(fstlib.times, [p.weight for p in path] + [path.finalWeight,])
+            #score = np.sum([float(p.weight) for p in path] + [float(path.finalWeight),])
         else:
             raise FstToolsError('semiring not implemented')
+        ipaths.append(iseq)
+        opaths.append(oseq)
         scores.append(float(score))
-    if len(cur_paths)==0:
-        cur_paths.append('[no path]')
-        scores.append(np.inf)
-    digits = int(np.log10(len(cur_paths)))+1
-    if tape == 'both':
-        result = pd.DataFrame(data={'input': [p[0] for p in cur_paths], 'output': [p[1] for p in cur_paths], 'weight': scores})
-    else:
-        result = pd.DataFrame(data=list(zip(cur_paths, scores)), columns=['string', 'weight'])
+
+    digits = int(np.log10(len(ipaths)))+1
+    result = pd.DataFrame(data=list(zip(ipaths, opaths, scores)), columns=['input', 'output','weight'])
     result.sort_values('weight', inplace=True)
-    result.index=[("path%%.%dd" % digits) % i for i in range(len(cur_paths))]
+    result.index=[("path%%.%dd" % digits) % i for i in range(len(ipaths))]
     if to_real:
         result.weight = np.exp(-result.weight)
 
     return result
 
-
-def mass_intersect_quick(ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True, delta_det=fstlib.DEF_DELTA, delta_min=fstlib.DEF_DELTA, return_filename=False):
+def mass_intersect_quick(ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True, delta_det=fstlib.SHORTEST_DELTA, delta_min=fstlib.SHORTEST_DELTA, return_filename=False):
     return multicommand(fstlib.core.intersect, ifsts, prune_nstate, prune_weight, prune_level, determinize=determinize, 
                             minimize=minimize,
                           rmepsilon=rmepsilon, sort='olabel', return_filename=return_filename, delta_min=delta_min, 
                           delta_det=delta_det)
 
 def multicommand(func, ifsts, prune_nstate = -1, prune_weight = "", prune_level = 0, determinize=True, minimize=True, rmepsilon=True,
-                    sort=None, repeat=1, delta_det=fstlib.DEF_DELTA, delta_min=fstlib.DEF_DELTA, return_filename=False):
+                    sort=None, repeat=1, delta_det=fstlib.SHORTEST_DELTA, delta_min=fstlib.SHORTEST_DELTA, return_filename=False):
     """ applies a function multiple times to multiple fsts or repeatedly to the same.
     Uses Cyril's "log" strategy to speed up computation. """
         
@@ -98,6 +57,7 @@ def multicommand(func, ifsts, prune_nstate = -1, prune_weight = "", prune_level 
     remaining = ifsts[:]
     level = 0
     funcalls = 0
+    ofst = None
     while len(remaining)>1:
         next_level = remaining[:]
         for i in range(len(remaining)//2): ## build pairs
@@ -184,4 +144,8 @@ def strings_to_count_matrix(list_of_strings, symbols=None):
     return count_matrix, symbols
 
 
+def neglog_to_real(x):
+    return np.exp(-float(x))
 
+def real_to_neglog(x):
+    return -np.log(float(x))
