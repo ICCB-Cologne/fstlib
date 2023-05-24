@@ -531,4 +531,3 @@ def synchronize(ifst):
 # def times(lhs, rhs):
 #     return pywrapfst.times(lhs, rhs)
 # commented out to avoid forwarding overhead
-

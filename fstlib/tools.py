@@ -57,6 +57,7 @@ def multicommand(func, ifsts, prune_nstate = -1, prune_weight = "", prune_level 
     remaining = ifsts[:]
     level = 0
     funcalls = 0
+    ofst = None
     while len(remaining)>1:
         next_level = remaining[:]
         for i in range(len(remaining)//2): ## build pairs
@@ -148,4 +149,3 @@ def neglog_to_real(x):
 
 def real_to_neglog(x):
     return -np.log(float(x))
-
