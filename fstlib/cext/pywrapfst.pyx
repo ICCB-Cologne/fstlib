@@ -1,5 +1,5 @@
 #cython: c_string_encoding=utf8, c_string_type=unicode, language_level=3, nonecheck=True
-# Copyright 2005-2020 Google LLC
+# Copyright 2005-2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ normal `k` prefix.
 # * _SymbolTableIterator
 # * EncodeMapper
 # * Fst, MutableFst, and VectorFst
-# * FST properties
+# * Properties and flags
 # * Arc
 # * _ArcIterator and _MutableArcIterator
 # * _StateIterator
@@ -81,14 +81,12 @@ from cython.operator cimport address as addr       # &foo
 from cython.operator cimport dereference as deref  # *foo
 from cython.operator cimport preincrement as inc   # ++foo
 
-# C imports.
-from libc.time cimport time
-
 # C++ imports.
 from libcpp cimport bool
 from libcpp.cast cimport static_cast
 from libcpp.limits cimport numeric_limits
 from libcpp.memory cimport static_pointer_cast
+from libcpp.optional cimport optional
 from libcpp.utility cimport move
 
 # Missing C++ imports.
@@ -133,7 +131,7 @@ QueueType = """typing.Literal["auto", "fifo", "lifo", "shortest", "state",
                               "top"]"""
 RandArcSelection = """typing.Literal["uniform", "log_prob", "fast_log_prob"]"""
 ReplaceLabelType = """typing.Literal["neither", "input", "output", "both"]"""
-ReweightType = """typing.Literal["to_inital", "to_final"]"""
+ReweightType = """typing.Literal["to_initial", "to_final"]"""
 SortType = """typing.Literal["ilabel", "olabel"]"""
 StateMapType = """typing.Literal["arc_sum", "arc_unique", "identity"]"""
 
@@ -321,7 +319,8 @@ cdef fst.DeterminizeType _get_determinize_type(const string &det_type) except *:
     raise FstArgError(f"Unknown determinization type: {det_type!r}")
   return _det_type
 
-cdef fst.EpsNormalizeType _get_eps_norm_type(const string &eps_norm_type) except *:
+cdef fst.EpsNormalizeType _get_eps_norm_type(
+    const string &eps_norm_type) except *:
   """Matches string with the appropriate EpsNormalizeType enum value.
 
   Args:
@@ -483,6 +482,37 @@ cdef class Weight:
     FstBadWeightError: Invalid weight.
   """
 
+  cdef void _check_weight(self) except *:
+    if self.type() == b"none":
+      raise FstArgError("Weight type not found")
+    if not self.member():
+      raise FstBadWeightError("Invalid weight")
+
+  def __init__(self, weight_type, weight):
+    self._weight.reset(new fst.WeightClass(tostring(weight_type),
+                                           weight_tostring(weight)))
+    self._check_weight()
+
+  cpdef Weight copy(self):
+    """
+    copy(self)
+
+    Returns a copy of the Weight.
+    """
+    cdef Weight _weight = Weight.__new__(Weight)
+    _weight._weight.reset(new fst.WeightClass(deref(self._weight)))
+    return _weight
+
+  cpdef string type(self):
+    """type(self)
+
+    Returns a string indicating the weight type.
+    """
+    return self._weight.get().Type()
+
+  cpdef string to_string(self):
+    return self._weight.get().ToString()
+
   def __repr__(self):
     return f"<{self.type()} Weight {self.to_string()} at 0x{id(self):x}>"
 
@@ -495,26 +525,24 @@ cdef class Weight:
   def __float__(self):
     return float(self.to_string())
 
-  def __init__(self, weight_type, weight):
-    self._weight.reset(new fst.WeightClass(tostring(weight_type),
-                                           weight_tostring(weight)))
-    self._check_weight()
+  cpdef bool member(self):
+    return self._weight.get().Member()
 
-  cdef void _check_weight(self) except *:
-    if self.type() == b"none":
-      raise FstArgError("Weight type not found")
-    if not self.member():
-      raise FstBadWeightError("Invalid weight")
+  def properties(self):
+    """properties(self)
 
-  cpdef Weight copy(self):
+    Returns the weight's properties.
+
+    Returns:
+      A bitmask.
     """
-    copy(self)
+    return WeightProperties(self._weight.get().Properties())
 
-    Returns a copy of the Weight.
-    """
-    cdef Weight _weight = Weight.__new__(Weight)
-    _weight._weight.reset(new fst.WeightClass(deref(self._weight)))
-    return _weight
+  def __eq__(Weight w1, Weight w2):
+    return fst.Eq(deref(w1._weight), deref(w2._weight))
+
+  def __ne__(Weight w1, Weight w2):
+    return not w1 == w2
 
   # To get around the inability to declare cdef class methods, we define the
   # C++ part out-of-class and then call it from within.
@@ -545,25 +573,6 @@ cdef class Weight:
     Constructs a non-member weight in the semiring.
     """
     return _no_weight(weight_type)
-
-  def __eq__(Weight w1, Weight w2):
-    return fst.Eq(deref(w1._weight), deref(w2._weight))
-
-  def __ne__(Weight w1, Weight w2):
-    return not w1 == w2
-
-  cpdef string to_string(self):
-    return self._weight.get().ToString()
-
-  cpdef string type(self):
-    """type(self)
-
-    Returns a string indicating the weight type.
-    """
-    return self._weight.get().Type()
-
-  cpdef bool member(self):
-    return self._weight.get().Member()
 
 
 cdef Weight _plus(Weight lhs, Weight rhs):
@@ -958,9 +967,9 @@ cdef class SymbolTableView:
     if not self._raw_ptr_or_raise().Write(path_tostring(source)):
       raise FstIOError(f"Write failed: {source!r}")
 
-  cpdef void write_text(self, source) except *:
+  def write_text(self, source, *, sep="\t "):
     """
-    write_text(self, source)
+    write_text(self, source, *, sep="\t ")
 
     Writes symbol table to text file.
 
@@ -968,11 +977,14 @@ cdef class SymbolTableView:
 
     Args:
       source: The string location of the output file.
+      sep: Characters to be used as a separator between fields in a textual
+          SymbolTable file, encoded as a string. Only the first byte is used.
 
     Raises:
       FstIOError: Write failed.
     """
-    if not self._raw_ptr_or_raise().WriteText(path_tostring(source)):
+    if not self._raw_ptr_or_raise().WriteText(path_tostring(source),
+                                              tostring(sep)):
       raise FstIOError(f"Write failed: {source!r}")
 
   cpdef bytes write_to_string(self):
@@ -1175,9 +1187,9 @@ cdef class SymbolTable(_MutableSymbolTable):
     return _init_SymbolTable(move(_symbols))
 
   @classmethod
-  def read_text(cls, source, bool allow_negative_labels=False):
+  def read_text(cls, source, *, sep="\t "):
     """
-    SymbolTable.read_text(source)
+    SymbolTable.read_text(source, *, sep="\t ")
 
     Reads symbol table from text file.
 
@@ -1185,17 +1197,15 @@ cdef class SymbolTable(_MutableSymbolTable):
 
     Args:
       source: The string location of the input text file.
-      allow_negative_labels: Should negative labels be allowed? (Not
-          recommended; may cause conflicts).
+      sep: Characters to be used as a separator between fields in a textual
+          SymbolTable file, encoded as a string. Only the first byte is used.
 
     Returns:
       A new SymbolTable instance.
     """
-    cdef unique_ptr[fst.SymbolTableTextOptions] _opts
-    _opts.reset(new fst.SymbolTableTextOptions(allow_negative_labels))
     cdef unique_ptr[fst.SymbolTable] _symbols
     _symbols.reset(fst.SymbolTable.ReadText(path_tostring(source),
-                                            deref(_opts)))
+                                            tostring(sep)))
     if _symbols.get() == NULL:
       raise FstIOError(f"Read failed: {source!r}")
     return _init_SymbolTable(move(_symbols))
@@ -1432,29 +1442,25 @@ cdef class EncodeMapper:
     """
     return self._mapper.get().WeightType()
 
-  cpdef uint8_t flags(self):
+  def flags(self):
     """
     flags(self)
 
     Returns the mapper's flags.
-    """
-    return self._mapper.get().Flags()
-
-  def properties(self, mask):
-    """
-    properties(self, mask)
-
-    Provides property bits.
-
-    This method provides user access to the properties of the mapper.
-
-    Args:
-      mask: The property mask to be compared to the mapper's properties.
 
     Returns:
-      A 64-bit bitmask representing the requested properties.
+      A bitmask.
     """
+    return EncodeMapperFlags(self._mapper.get().Flags())
 
+  def properties(self, mask):
+    """properties(self, mask)
+
+    Returns the mapper's properties.
+
+    Returns:
+      A bitmask.
+    """
     return FstProperties(self._mapper.get().Properties(mask.value))
 
   @classmethod
@@ -1841,6 +1847,15 @@ cdef class Fst:
       return
     return _init_FstSymbolTableView(self._fst, input_side=True)
 
+  def num_states_if_known(self):
+    """
+    num_states_if_known(self)
+
+    Returns the number of states if known, or None otherwise.
+    """
+    cdef optional[int64_t] result = self._fst.get().NumStatesIfKnown()
+    return result.value() if result.has_value() else None
+
   cpdef size_t num_arcs(self, int64_t state) except *:
     """
     num_arcs(self, state)
@@ -1962,11 +1977,7 @@ cdef class Fst:
     """
     properties(self, mask, test)
 
-    Provides property bits.
-
-    This method provides user access to the properties attributes for the FST.
-    The resulting value is a long integer, but when it is cast to a boolean,
-    it represents whether or not the FST has the `mask` property.
+    Returns the FST properties.
 
     Args:
       mask: The property mask to be compared to the FST's properties.
@@ -1974,7 +1985,7 @@ cdef class Fst:
           the mask?
 
     Returns:
-      A FstProperties representing a 64-bit bitmask of the requested properties.
+      A bitmask.
     """
     return FstProperties(self._fst.get().Properties(mask.value, test))
 
@@ -2048,7 +2059,7 @@ cdef class Fst:
     """
     weight_type(self)
 
-    Provides the FST's weight type.
+    Returns the FST's weight type.
 
     Returns:
       A string representing the weight type.
@@ -2199,7 +2210,8 @@ cdef class MutableFst(Fst):
     itself with semiring One if `closure_type` is "star".
 
     Args:
-      closure_type: If "star", do not accept the empty string. If "plus", accept the empty string.
+      closure_type: If "star", do not accept the empty string. If "plus", accept
+      the empty string.
 
     Returns:
       self.
@@ -2520,7 +2532,8 @@ cdef class MutableFst(Fst):
            bool remove_total_weight=False,
            reweight_type="to_initial"):
     """
-    push(self, delta=1-e6, remove_total_weight=False, reweight_type="to_initial")
+    push(self, delta=1-e6, remove_total_weight=False,
+         reweight_type="to_initial")
 
     Pushes weights towards the initial or final states.
 
@@ -2874,7 +2887,7 @@ cdef class MutableFst(Fst):
     """
     set_properties(self, props, mask)
 
-    Sets the properties bits.
+    Sets the properties.
 
     Args:
       props: The properties to be set.
@@ -3047,6 +3060,7 @@ NO_SYMBOL = fst.kNoSymbol
 
 ## FST properties.
 
+
 class FstProperties(enum.Flag):
   EXPANDED = fst.kExpanded
   MUTABLE = fst.kMutable
@@ -3114,24 +3128,47 @@ for name, member in FstProperties.__members__.items():
   globals()[name] = member
 
 
-## Arc iterator properties.
+## Weight properties.
 
 
-ARC_I_LABEL_VALUE = fst.kArcILabelValue
-ARC_O_LABEL_VALUE = fst.kArcOLabelValue
-ARC_WEIGHT_VALUE = fst.kArcWeightValue
-ARC_NEXT_STATE_VALUE = fst.kArcNextStateValue
-ARC_NO_CACHE = fst.kArcNoCache
-ARC_VALUE_FLAGS = fst.kArcValueFlags
-ARC_FLAGS = fst.kArcFlags
+class WeightProperties(enum.Flag):
+  LEFT_SEMIRING = fst.kLeftSemiring
+  RIGHT_SEMIRING = fst.kRightSemiring
+  SEMIRING = fst.kSemiring
+  COMMUTATIVE = fst.kCommutative
+  IDEMPOTENT = fst.kIdempotent
+  PATH = fst.kPath
+
+for name, member in WeightProperties.__members__.items():
+   globals()[name] = member
 
 
-## EncodeMapper properties.
+## Arc iterator flags.
 
 
-ENCODE_LABELS = fst.kEncodeLabels
-ENCODE_WEIGHTS = fst.kEncodeWeights
-ENCODE_FLAGS = fst.kEncodeFlags
+class ArcIteratorFlags(enum.Flag):
+  ARC_I_LABEL_VALUE = fst.kArcILabelValue
+  ARC_O_LABEL_VALUE = fst.kArcOLabelValue
+  ARC_WEIGHT_VALUE = fst.kArcWeightValue
+  ARC_NEXT_STATE_VALUE = fst.kArcNextStateValue
+  ARC_NO_CACHE = fst.kArcNoCache
+  ARC_VALUE_FLAGS = fst.kArcValueFlags
+  ARC_FLAGS = fst.kArcFlags
+
+for name, member in ArcIteratorFlags.__members__.items():
+   globals()[name] = member
+
+
+## EncodeMapper flags.
+
+
+class EncodeMapperFlags(enum.Flag):
+  ENCODE_LABELS = fst.kEncodeLabels
+  ENCODE_WEIGHTS = fst.kEncodeWeights
+  ENCODE_FLAGS = fst.kEncodeFlags
+
+for name, member in EncodeMapperFlags.__members__.items():
+   globals()[name] = member
 
 
 ## Arc.
@@ -3248,16 +3285,16 @@ cdef class _ArcIterator:
     """
     return self._aiter.get().Done()
 
-  cpdef uint8_t flags(self):
+  def flags(self):
     """
     flags(self)
 
-    Returns the current iterator behavioral flags.
+    Returns the iterator's flags.
 
     Returns:
-      The current iterator behavioral flags as an integer.
+      A bitmask.
     """
-    return self._aiter.get().Flags()
+    return ArcIteratorFlags(self._aiter.get().Flags())
 
   cpdef void next(self):
     """
@@ -3381,16 +3418,16 @@ cdef class _MutableArcIterator:
     """
     return self._aiter.get().Done()
 
-  cpdef uint8_t flags(self):
+  def flags(self):
     """
     flags(self)
 
-    Returns the current iterator behavioral flags.
+    Returns the iterator's flags.
 
     Returns:
-      The current iterator behavioral flags as an integer.
+      A bitmask.
     """
-    return self._aiter.get().Flags()
+    return ArcIteratorFlags(self._aiter.get().Flags())
 
   cpdef void next(self):
     """
@@ -3907,7 +3944,7 @@ cpdef bool equal(Fst ifst1, Fst ifst2, float delta=fst.kDelta):
   return fst.Equal(deref(ifst1._fst), deref(ifst2._fst), delta)
 
 
-cpdef bool equivalent(Fst ifst1, Fst ifst2, float delta=fst.kDelta):
+cpdef bool equivalent(Fst ifst1, Fst ifst2, float delta=fst.kDelta) except *:
   """
   equivalent(ifst1, ifst2, delta=0.0009765625)
 
@@ -3924,8 +3961,17 @@ cpdef bool equivalent(Fst ifst1, Fst ifst2, float delta=fst.kDelta):
 
   Returns:
     True if the FSTs satisfy the above condition, else False.
+
+  Raises:
+    FstOpError: Some precondition of the argument FSTs does not hold.
   """
-  return fst.Equivalent(deref(ifst1._fst), deref(ifst2._fst), delta)
+  cdef bool err = False
+  is_equiv = fst.Equivalent(deref(ifst1._fst),
+                            deref(ifst2._fst),
+                            delta, addr(err))
+  if err:
+    raise FstOpError("Argument FST did not satisfy preconditions")
+  return is_equiv
 
 
 cpdef MutableFst intersect(Fst ifst1,
@@ -4028,7 +4074,8 @@ cpdef MutableFst push(Fst ifst,
                       reweight_type="to_initial"):
   """
   push(ifst, delta=0.0009765625, push_weights=False, push_labels=False,
-       remove_common_affix=False, remove_total_weight=False, reweight_type="to_initial")
+       remove_common_affix=False, remove_total_weight=False,
+       reweight_type="to_initial")
 
   Constructively pushes weights/labels towards initial or final states.
 
@@ -4066,8 +4113,8 @@ cpdef MutableFst push(Fst ifst,
   _tfst.reset(new fst.VectorFstClass(ifst.arc_type()))
   cdef uint8_t flags = fst.GetPushFlags(push_weights,
                                       push_labels,
-                                      remove_common_affix,
-                                      remove_total_weight)
+                                      remove_total_weight,
+                                      remove_common_affix)
   fst.Push(deref(ifst._fst),
            _tfst.get(),
            flags,
@@ -4082,10 +4129,10 @@ cpdef bool randequivalent(Fst ifst1,
                           float delta=fst.kDelta,
                           select="uniform",
                           int32_t max_length=numeric_limits[int32_t].max(),
-                          uint64_t seed=0) except *:
+                          uint64_t seed=fst.kDefaultSeed) except *:
   """
   randequivalent(ifst1, ifst2, npath=1, delta=0.0009765625, select="uniform",
-                 max_length=2147483647, seed=0)
+                 max_length=2147483647, seed=-1)
 
   Are two acceptors stochastically equivalent?
 
@@ -4100,8 +4147,8 @@ cpdef bool randequivalent(Fst ifst1,
     ifst2: The second input FST.
     npath: The number of random paths to generate.
     delta: Comparison/quantization delta.
-    seed: An optional seed value for random path generation; if zero, the
-        current time and process ID is used.
+    seed: An optional seed value for random path generation; if not specified,
+        the current time is used.
     select: A string matching a known random arc selection type; one of:
         "uniform", "log_prob", "fast_log_prob".
     max_length: The maximum length of each random path.
@@ -4118,14 +4165,13 @@ cpdef bool randequivalent(Fst ifst1,
                                                     1,
                                                     False,
                                                     False))
-  if seed == 0:
-    seed = time(NULL)
+  cdef uint64_t _seed = fst.GetSeed(seed)
   return fst.RandEquivalent(deref(ifst1._fst),
                             deref(ifst2._fst),
                             npath,
                             deref(_opts),
                             delta,
-                            seed)
+                            _seed)
 
 
 cpdef MutableFst randgen(Fst ifst,
@@ -4134,10 +4180,10 @@ cpdef MutableFst randgen(Fst ifst,
                          int32_t max_length=numeric_limits[int32_t].max(),
                          bool weighted=False,
                          bool remove_total_weight=False,
-                         uint64_t seed=0):
+                         uint64_t seed=fst.kDefaultSeed):
   """
   randgen(ifst, npath=1, seed=0, select="uniform", max_length=2147483647,
-          weighted=False, remove_total_weight=False)
+          weighted=False, remove_total_weight=False, seed=-1)
 
   Randomly generate successful paths in an FST.
 
@@ -4152,8 +4198,8 @@ cpdef MutableFst randgen(Fst ifst,
   Args:
     ifst: The input FST.
     npath: The number of random paths to generate.
-    seed: An optional seed value for random path generation; if zero, the
-        current time and process ID is used.
+    seed: An optional seed value for random path generation; if not specified,
+        the current time is used.
     select: A string matching a known random arc selection type; one of:
         "uniform", "log_prob", "fast_log_prob".
     max_length: The maximum length of each random path.
@@ -4174,9 +4220,8 @@ cpdef MutableFst randgen(Fst ifst,
                                                    remove_total_weight))
   cdef unique_ptr[fst.VectorFstClass] _tfst
   _tfst.reset(new fst.VectorFstClass(ifst.arc_type()))
-  if seed == 0:
-    seed = time(NULL)
-  fst.RandGen(deref(ifst._fst), _tfst.get(), deref(_opts), seed)
+  cdef uint64_t _seed = fst.GetSeed(seed)
+  fst.RandGen(deref(ifst._fst), _tfst.get(), deref(_opts), _seed)
   return _init_MutableFst(_tfst.release())
 
 
@@ -4438,8 +4483,7 @@ cdef class Compiler:
   """
   Compiler(fst_type="vector", arc_type="standard", isymbols=None,
            osymbols=None, ssymbols=None, acceptor=False, keep_isymbols=False,
-           keep_osymbols=False, keep_state_numbering=False,
-           allow_negative_labels=False)
+           keep_osymbols=False, keep_state_numbering=False)
 
   Class used to compile FSTs from strings.
 
@@ -4480,8 +4524,6 @@ cdef class Compiler:
     keep_isymbols: Should the input symbol table be stored in the FST?
     keep_osymbols: Should the output symbol table be stored in the FST?
     keep_state_numbering: Should the state numbering be preserved?
-    allow_negative_labels: Should negative labels be allowed? (Not
-        recommended; may cause conflicts).
   """
 
   def __cinit__(self,
@@ -4493,8 +4535,7 @@ cdef class Compiler:
                 bool acceptor=False,
                 bool keep_isymbols=False,
                 bool keep_osymbols=False,
-                bool keep_state_numbering=False,
-                bool allow_negative_labels=False):
+                bool keep_state_numbering=False):
     self._sstrm.reset(new stringstream())
     self._fst_type = tostring(fst_type)
     self._arc_type = tostring(arc_type)
@@ -4511,7 +4552,6 @@ cdef class Compiler:
     self._keep_isymbols = keep_isymbols
     self._keep_osymbols = keep_osymbols
     self._keep_state_numbering = keep_state_numbering
-    self._allow_negative_labels = allow_negative_labels
 
   cpdef Fst compile(self):
     """
@@ -4538,8 +4578,7 @@ cdef class Compiler:
                                 self._acceptor,
                                 self._keep_isymbols,
                                 self._keep_osymbols,
-                                self._keep_state_numbering,
-                                self._allow_negative_labels)
+                                self._keep_state_numbering)
     self._sstrm.reset(new stringstream())
     if _tfst.get() == NULL:
       raise FstOpError("Compilation failed")
