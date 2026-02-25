@@ -209,6 +209,9 @@ class Fst:
 
     def num_states(self):
         return self.fst.num_states()
+    
+    def num_states_if_known(self):
+        return self.fst.num_states_if_known()
 
     def output_symbols(self):
         return self.fst.output_symbols()

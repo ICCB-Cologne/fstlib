@@ -52,11 +52,12 @@ def decompose(ifsa, ofsa, event_fst, n_events, return_all=False):
     else: ## only return final beliefs
 	    return B
 
-def encode_determinize_minimize(ifst, delta=1e-6):
+def encode_determinize_minimize(ifst, delta=1e-6, minimize=True):
     em = fstlib.EncodeMapper(arc_type=ifst.arc_type(), encode_labels=True, encode_weights=False)
     ofst = ifst.copy().encode(em)
     ofst = fstlib.determinize(ofst, delta=delta)
-    ofst.minimize()
+    if minimize:
+        ofst.minimize()
     ofst.decode(em)
     return ofst
 
