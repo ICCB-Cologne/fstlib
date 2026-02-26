@@ -1,5 +1,5 @@
 #cython: language_level=3
-# Copyright 2005-2020 Google LLC
+# Copyright 2005-2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from libc.stdint cimport uint64_t
 
 from libcpp cimport bool
 from libcpp.memory cimport unique_ptr
+from libcpp.optional cimport optional
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
@@ -115,6 +116,14 @@ cdef extern from "<fst/fstlib.h>" namespace "fst" nogil:
   const uint8_t kEncodeWeights
   const uint8_t kEncodeFlags
 
+  # Weight flags.
+  const uint64_t kLeftSemiring
+  const uint64_t kRightSemiring
+  const uint64_t kSemiring
+  const uint64_t kCommutative
+  const uint64_t kIdempotent
+  const uint64_t kPath
+
   # Default argument constants.
   const float kDelta
   const float kShortestDelta
@@ -184,9 +193,6 @@ cdef extern from "<fst/fstlib.h>" namespace "fst" nogil:
     REWEIGHT_TO_INITIAL
     REWEIGHT_TO_FINAL
 
-  cdef cppclass SymbolTableTextOptions:
-
-    SymbolTableTextOptions(bool)
 
   # This is actually a nested class, but Cython doesn't need to know that.
   cdef cppclass SymbolTableIterator "fst::SymbolTable::iterator":
@@ -209,7 +215,6 @@ cdef extern from "<fst/fstlib.h>" namespace "fst" nogil:
 
       bool operator!=(const SymbolTableIterator &, const SymbolTableIterator &)
 
-
   # Symbol tables.
   cdef cppclass SymbolTable:
 
@@ -228,7 +233,7 @@ cdef extern from "<fst/fstlib.h>" namespace "fst" nogil:
     SymbolTable *ReadStream "Read"(istream &, const string &)
 
     @staticmethod
-    SymbolTable *ReadText(const string &, const SymbolTableTextOptions &)
+    SymbolTable *ReadText(const string &, const string &)
 
     int64_t AddSymbol(const string &, int64_t)
 
@@ -264,9 +269,7 @@ cdef extern from "<fst/fstlib.h>" namespace "fst" nogil:
 
     bool Write(const string &)
 
-    bool WriteText(ostream &)
-
-    bool WriteText(const string &)
+    bool WriteText(const string &, const string &)
 
     SymbolTableIterator begin()
 
@@ -291,7 +294,8 @@ cdef extern from "<fst/fstlib.h>" namespace "fst" nogil:
     UTF8 "fst::TokenType::UTF8"
 
 
-cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
+cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" \
+    nogil:
 
   cdef cppclass WeightClass:
 
@@ -306,6 +310,8 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
     string ToString()
 
     bool Member()
+
+    uint64_t Properties()
 
     @staticmethod
     const WeightClass &Zero(const string &)
@@ -361,6 +367,8 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
     size_t NumInputEpsilons(int64_t)
 
     size_t NumOutputEpsilons(int64_t)
+
+    optional[int64_t] NumStatesIfKnown()
 
     const string &ArcType()
 
@@ -517,7 +525,8 @@ ctypedef pair[int64_t, const FstClass *] LabelFstClassPair
 ctypedef pair[int64_t, int64_t] LabelPair
 
 
-cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
+cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" \
+    nogil:
 
   # TODO(wolfsonkin): Don't do this hack if Cython gets proper enum class
   # support: https://github.com/cython/cython/issues/1603
@@ -546,7 +555,6 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
                                             const SymbolTable *,
                                             const SymbolTable *,
                                             const SymbolTable*,
-                                            bool,
                                             bool,
                                             bool,
                                             bool,
@@ -616,7 +624,7 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
 
   cdef bool Equal(const FstClass &, const FstClass &, float)
 
-  cdef bool Equivalent(const FstClass &, const FstClass &, float)
+  cdef bool Equivalent(const FstClass &, const FstClass &, float, bool *)
 
   cdef void Intersect(const FstClass &,
                       const FstClass &,
@@ -685,7 +693,8 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
   ctypedef enum RandArcSelection:
     UNIFORM_ARC_SELECTOR "fst::script::RandArcSelection::UNIFORM"
     LOG_PROB_ARC_SELECTOR "fst::script::RandArcSelection::LOG_PROB"
-    FAST_LOG_PROB_ARC_SELECTOR "fst::script::RandArcSelection::FAST_LOG_PROB"
+    FAST_LOG_PROB_ARC_SELECTOR \
+        "fst::script::RandArcSelection::FAST_LOG_PROB"
 
   cdef bool RandEquivalent(const FstClass &,
                            const FstClass &,
@@ -768,6 +777,8 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" nogil:
 
 cdef extern from "<fst/script/getters.h>" namespace "fst::script" nogil:
 
+  cdef uint64_t kDefaultSeed
+
   cdef bool GetArcSortType(const string &, ArcSortType *)
 
   cdef bool GetComposeFilter(const string &, ComposeFilter *)
@@ -787,6 +798,8 @@ cdef extern from "<fst/script/getters.h>" namespace "fst::script" nogil:
   cdef bool GetReplaceLabelType(string, bool, ReplaceLabelType *)
 
   cdef bool GetReweightType(const string &, ReweightType *)
+
+  cdef uint64_t GetSeed(uint64_t)
 
   cdef bool GetTokenType(const string &, TokenType *)
 

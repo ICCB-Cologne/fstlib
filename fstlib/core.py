@@ -59,7 +59,7 @@ class Fst:
 
     def __invert__(self):
         return self.copy().invert()
-
+    
     def add_arc(self, state, arc):
         """ Arc can be pywrapfst.Arc or 4-tuple (ilabel, olabel, weight, nextstate).
          An extended version of pywrapfst.MutableFst.add_arc() that can handle tuples as input."""
@@ -209,6 +209,9 @@ class Fst:
 
     def num_states(self):
         return self.fst.num_states()
+    
+    def num_states_if_known(self):
+        return self.fst.num_states_if_known()
 
     def output_symbols(self):
         return self.fst.output_symbols()
